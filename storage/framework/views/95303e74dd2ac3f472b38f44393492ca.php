@@ -1,4 +1,4 @@
-<?php $__env->startSection('title', 'Admin Analytics — StartupConnect'); ?>
+<?php $__env->startSection('title', 'Admin Analytics — Syncora'); ?>
 
 <?php $__env->startPush('styles'); ?>
 <style>

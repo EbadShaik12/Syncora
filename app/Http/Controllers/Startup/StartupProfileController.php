@@ -53,7 +53,11 @@ class StartupProfileController extends Controller
             'state'          => ['nullable', 'string', 'max:255'],
             'website'        => ['nullable', 'url'],
             'linkedin'       => ['nullable', 'url'],
-            'logo'           => ['nullable', 'image', 'max:2048'],
+            'logo'           => ['nullable', 'image', 'max:10240'],
+            'banner'         => ['nullable', 'image', 'max:15360'],
+            'mission'        => ['nullable', 'string'],
+            'vision'         => ['nullable', 'string'],
+            'annual_revenue' => ['nullable', 'string', 'max:255'],
         ]);
 
         if ($request->hasFile('logo')) {
@@ -63,6 +67,15 @@ class StartupProfileController extends Controller
             }
             $logoPath = $request->file('logo')->store('logos', 'public');
             $profile->logo = $logoPath;
+        }
+
+        if ($request->hasFile('banner')) {
+            // Delete old banner if exists
+            if ($profile->banner) {
+                Storage::disk('public')->delete($profile->banner);
+            }
+            $bannerPath = $request->file('banner')->store('banners', 'public');
+            $profile->banner = $bannerPath;
         }
 
         // Convert tech_tags to array
@@ -88,6 +101,11 @@ class StartupProfileController extends Controller
             'state'          => $validated['state'] ?? null,
             'website'        => $validated['website'] ?? null,
             'linkedin'       => $validated['linkedin'] ?? null,
+            'logo'           => $profile->logo,
+            'banner'         => $profile->banner,
+            'mission'        => $validated['mission'] ?? null,
+            'vision'         => $validated['vision'] ?? null,
+            'annual_revenue' => $validated['annual_revenue'] ?? null,
         ]);
 
         return redirect()->back()->with('success', 'Profile updated successfully!');

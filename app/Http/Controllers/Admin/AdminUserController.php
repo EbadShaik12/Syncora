@@ -47,7 +47,7 @@ class AdminUserController extends Controller
         Notification::create([
             'user_id' => $user->id,
             'title'   => 'Account Approved! 🎉',
-            'message' => 'Congratulations! Your account has been approved. You now have full access to matching, challenges, and swiping!',
+            'body'    => 'Congratulations! Your account has been approved. You now have full access to matching, challenges, and swiping!',
             'type'    => 'milestone',
         ]);
 
@@ -61,7 +61,7 @@ class AdminUserController extends Controller
         Notification::create([
             'user_id' => $user->id,
             'title'   => 'Account Application Status',
-            'message' => 'We regret to inform you that your registration application has been rejected.',
+            'body'    => 'We regret to inform you that your registration application has been rejected.',
             'type'    => 'milestone',
         ]);
 

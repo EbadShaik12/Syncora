@@ -85,10 +85,12 @@ class User extends Authenticatable
 
     public function getAllConnections()
     {
-        return Connection::where('user_one_id', $this->id)
-            ->orWhere('user_two_id', $this->id)
-            ->where('status', 'active')
-            ->get();
+        return Connection::where(function ($query) {
+            $query->where('user_one_id', $this->id)
+                  ->orWhere('user_two_id', $this->id);
+        })
+        ->where('status', 'active')
+        ->get();
     }
 
     // Helpers

@@ -14,6 +14,7 @@ class Challenge extends Model
     protected $fillable = [
         'corporate_id', 'industry_id', 'title', 'description', 'requirements',
         'budget_min', 'budget_max', 'deadline', 'required_tags', 'status',
+        'attachment_path', 'attachment_filename',
     ];
 
     protected $casts = [

@@ -14,10 +14,20 @@
             </div>
         </div>
         <p class="text-sm opacity-90 mb-3">{{ $challenge->description }}</p>
-        <div class="flex flex-wrap gap-3 text-xs">
+        <div class="flex flex-wrap gap-3 text-xs mb-3">
             <span class="px-2.5 py-1 bg-white/20 rounded-full">💰 ₹{{ number_format($challenge->budget_min) }} – ₹{{ number_format($challenge->budget_max) }}</span>
             <span class="px-2.5 py-1 bg-white/20 rounded-full">📅 Deadline: {{ $challenge->deadline->format('M d, Y') }}</span>
         </div>
+        @if($challenge->attachment_path)
+            <div class="pt-3 border-t border-white/20">
+                <a href="{{ asset('storage/' . $challenge->attachment_path) }}" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-lg text-xs font-bold text-white transition shadow-sm">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    Reference Brief: {{ $challenge->attachment_filename }}
+                </a>
+            </div>
+        @endif
     </div>
 
     @if($challenge->requirements)

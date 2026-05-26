@@ -58,7 +58,7 @@
     <div class="relative h-[650px] swipe-container reveal reveal-delay-1 flex items-center justify-center">
         
         {{-- Empty State --}}
-        <div x-show="currentIndex >= cards.length" x-cloak class="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
+        <div x-show="currentIndex >= cards.length" x-cloak class="absolute inset-0 flex items-center justify-center z-20">
             <div class="text-center bg-white/50 dark:bg-gray-900/50 backdrop-blur-xl rounded-[3rem] shadow-2xl border border-gray-100 dark:border-gray-800 w-full max-w-sm p-12">
                 <div class="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-primary-500 to-purple-600 flex items-center justify-center mb-6 shadow-xl shadow-primary-500/30">
                     <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
@@ -85,7 +85,7 @@
                 $bgGradient = $gradients[$card['user']->id % count($gradients)];
             @endphp
             <div id="card-{{ $index }}"
-                 class="swipe-card bg-white dark:bg-gray-900 rounded-[2.5rem] shadow-[0_30px_60px_rgba(0,0,0,0.15)] border border-gray-100 dark:border-gray-800 overflow-hidden absolute inset-x-0 mx-auto max-w-sm"
+                 class="swipe-card bg-white dark:bg-[#0d0d12] rounded-[2rem] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.15)] border border-slate-200 dark:border-zinc-800 overflow-hidden absolute inset-x-0 mx-auto max-w-sm"
                  :class="{
                      'is-active': currentIndex === {{ $index }},
                      'is-next-1': currentIndex === {{ $index }} - 1,
@@ -95,103 +95,186 @@
                      'animate-swipe-right': isSwipingRight === {{ $index }}
                  }">
                 
-                {{-- Card Header Gradient --}}
-                <div class="h-40 bg-gradient-to-br {{ $bgGradient }} relative overflow-hidden">
-                    <div class="absolute inset-0 noise opacity-20"></div>
-                    <div class="absolute inset-0 bg-white/10 mesh-gradient opacity-30"></div>
+                @if(auth()->user()->isStartup())
+                    {{-- ── STARTUP VIEW: LINKEDIN POST STYLE FOR CHALLENGES ── --}}
                     
-                    {{-- Compatibility Ring --}}
-                    <div class="absolute top-6 right-6">
-                        <div class="relative w-16 h-16 bg-white/20 backdrop-blur-md rounded-full shadow-lg flex items-center justify-center border border-white/30">
-                            <svg class="w-16 h-16 absolute inset-0 -rotate-90" viewBox="0 0 36 36">
-                                <circle cx="18" cy="18" r="15" fill="none"
-                                    stroke="@if($card['score']['color'] === 'green') #10b981 @elseif($card['score']['color'] === 'blue') #3b82f6 @elseif($card['score']['color'] === 'yellow') #eab308 @else #ef4444 @endif"
-                                    stroke-width="3" stroke-dasharray="{{ $card['score']['score'] }}, 100" stroke-linecap="round"/>
-                            </svg>
-                            <div class="flex flex-col items-center">
-                                <span class="text-xl font-black text-white drop-shadow-md leading-none">{{ $card['score']['score'] }}</span>
-                                <span class="text-[8px] text-white/90 uppercase font-bold tracking-wider mt-0.5">Match</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {{-- Avatar (Absolute to card to prevent clipping by overflow-y-auto body) --}}
-                <div class="absolute top-28 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
-                    <div class="w-24 h-24 rounded-[1.5rem] bg-white ring-4 ring-white dark:ring-gray-900 shadow-xl overflow-hidden p-1">
-                        <img src="{{ $card['user']->logoUrl() }}" alt="" class="w-full h-full object-cover rounded-xl">
-                    </div>
-                </div>
-                
-                {{-- Card Body --}}
-                <div class="px-8 pb-8 h-[calc(100%-160px)] flex flex-col overflow-y-auto hide-scrollbar relative">
-                    {{-- Spacer to account for absolute avatar --}}
-                    <div class="h-[72px] flex-shrink-0"></div>
-                    
-                    {{-- Title & Info --}}
-                    <div class="text-center mb-6">
-                        <h2 class="text-2xl font-black font-outfit text-gray-900 dark:text-white">{{ $card['user']->companyName() }}</h2>
-                        <p class="text-sm font-bold text-primary-600 dark:text-primary-400 uppercase tracking-wider mt-1">{{ $card['profile']?->industry?->name ?? 'Industry' }}</p>
-                        @if($card['profile']?->city)
-                            <p class="text-xs font-semibold text-gray-500 mt-2 bg-gray-100 dark:bg-gray-800 inline-block px-3 py-1 rounded-full">📍 {{ $card['profile']->city }}{{ $card['profile']->state ? ', '.$card['profile']->state : '' }}</p>
-                        @endif
-                    </div>
-
-                    {{-- Dynamic Content (Startup vs Corporate) --}}
-                    @if($card['user']->isStartup() && $card['profile'])
-                        <div class="flex flex-wrap justify-center gap-2 mb-6">
-                            <span class="text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-xl {{ $card['profile']->stageColor() }}">{{ $card['profile']->stageLabel() }}</span>
-                            @if($card['profile']->team_size)<span class="text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">👥 {{ $card['profile']->team_size }}</span>@endif
-                        </div>
-                        <div class="bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-4 mb-6">
-                            <p class="text-sm text-gray-700 dark:text-gray-300 font-medium leading-relaxed italic text-center">"{{ $card['profile']->elevator_pitch }}"</p>
-                        </div>
-                        @if($card['profile']->tech_tags && count($card['profile']->tech_tags) > 0)
-                            <div class="flex flex-wrap justify-center gap-1.5 mb-6">
-                                @foreach(array_slice($card['profile']->tech_tags, 0, 5) as $tag)
-                                    <span class="text-xs font-bold px-2.5 py-1 rounded-lg bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 border border-primary-100 dark:border-primary-800/50">#{{ $tag }}</span>
-                                @endforeach
-                            </div>
-                        @endif
-                    @elseif($card['user']->isCorporate() && $card['profile'])
-                        <div class="bg-purple-50 dark:bg-purple-900/20 rounded-2xl p-5 mb-6 border border-purple-100 dark:border-purple-800/50 relative">
-                            <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-purple-600 text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full shadow-md">Looking For</div>
-                            <p class="text-sm text-gray-700 dark:text-gray-300 font-medium leading-relaxed text-center mt-2">{{ $card['profile']->problem_statement }}</p>
-                        </div>
-                        @if($card['profile']->seeking_technologies && count($card['profile']->seeking_technologies) > 0)
-                            <div class="flex flex-wrap justify-center gap-1.5 mb-6">
-                                @foreach(array_slice($card['profile']->seeking_technologies, 0, 5) as $tag)
-                                    <span class="text-xs font-bold px-2.5 py-1 rounded-lg bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 border border-purple-100 dark:border-purple-800/50">#{{ $tag }}</span>
-                                @endforeach
-                            </div>
-                        @endif
-                    @endif
-
-                    {{-- AI Insights Accordion --}}
-                    <details class="mt-auto group bg-gray-50 dark:bg-gray-800/50 rounded-2xl overflow-hidden transition-all duration-300 border border-gray-100 dark:border-gray-700">
-                        <summary class="cursor-pointer text-xs font-bold p-4 list-none flex items-center justify-between text-gray-900 dark:text-white select-none">
-                            <span class="flex items-center gap-2">
-                                <span class="w-6 h-6 rounded-full bg-primary-100 dark:bg-primary-900/50 text-primary-600 flex items-center justify-center">🤖</span>
-                                AI Compatibility Insights
-                            </span>
-                            <svg class="w-4 h-4 text-gray-400 group-open:rotate-180 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
-                        </summary>
-                        <div class="px-4 pb-4 space-y-3 border-t border-gray-200 dark:border-gray-700 pt-3">
-                            @foreach($card['score']['breakdown'] as $key => $item)
-                                <div class="flex items-center gap-3 text-xs font-medium">
-                                    <span class="w-24 text-gray-500 uppercase tracking-wider text-[10px] font-bold">{{ $item['label'] }}</span>
-                                    <div class="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden shadow-inner">
-                                        <div class="h-full bg-gradient-to-r from-primary-400 to-purple-500 rounded-full transition-all" style="width: {{ $item['max'] > 0 ? ($item['score'] / $item['max']) * 100 : 0 }}%"></div>
-                                    </div>
-                                    <span class="font-bold text-gray-900 dark:text-white w-8 text-right">{{ round($item['score']) }}/{{ $item['max'] }}</span>
+                    {{-- Post Header --}}
+                    <div class="p-4 flex items-center justify-between border-b border-slate-100 dark:border-zinc-800/80 bg-white dark:bg-[#0d0d12] flex-shrink-0">
+                        <div class="flex items-center gap-3">
+                            <img src="{{ $card['user']->logoUrl() }}" class="w-10 h-10 rounded-full object-cover border border-slate-200 dark:border-zinc-800">
+                            <div class="min-w-0">
+                                <div class="flex items-center gap-1">
+                                    <span class="font-bold text-xs text-slate-900 dark:text-white truncate">{{ $card['user']->companyName() }}</span>
+                                    <span class="text-blue-500 text-[10px]" title="Verified Corporate Partner">✔</span>
                                 </div>
-                            @endforeach
-                            <div class="text-center mt-3 pt-3 border-t border-gray-200 dark:border-gray-700/50">
-                                <a href="{{ route('profile.show', $card['user']) }}" target="_blank" class="text-xs font-bold text-primary-600 hover:text-primary-700 uppercase tracking-wider">View Full Profile ↗</a>
+                                <p class="text-[9px] text-slate-500 dark:text-zinc-400 font-semibold truncate">{{ $card['profile']?->industry?->name ?? 'Corporate Partner' }}</p>
+                                <p class="text-[8px] text-slate-400 dark:text-zinc-500 flex items-center gap-1 mt-0.5 font-medium">
+                                    {{ $card['challenge']->created_at ? $card['challenge']->created_at->diffForHumans() : 'Recently' }} • 🌍
+                                </p>
                             </div>
                         </div>
-                    </details>
-                </div>
+                        <span class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 border border-purple-100 dark:border-purple-800/40">Challenge</span>
+                    </div>
+
+                    {{-- Post Body --}}
+                    <div class="px-5 py-4 h-[calc(100%-72px)] flex flex-col overflow-y-auto hide-scrollbar bg-white dark:bg-[#0d0d12]">
+                        
+                        {{-- Post Content Description --}}
+                        <p class="text-xs text-slate-600 dark:text-zinc-300 leading-relaxed mb-4 whitespace-pre-line font-medium">
+                            {{ Str::limit($card['challenge']->description, 160) }}
+                        </p>
+
+                        {{-- Rich Link Preview Card --}}
+                        <div class="border border-slate-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm bg-slate-50/50 dark:bg-zinc-900/10 mb-4 hover:border-purple-400 dark:hover:border-purple-500/50 transition duration-200 flex flex-col flex-shrink-0 cursor-pointer"
+                             @click="openChallengeDetails({{ $index }})">
+                            
+                            {{-- Header abstract --}}
+                            <div class="h-20 bg-gradient-to-br {{ $bgGradient }} relative overflow-hidden flex items-center justify-center p-3 text-center">
+                                <div class="absolute inset-0 noise opacity-20"></div>
+                                <div class="absolute inset-0 bg-white/10 mesh-gradient opacity-30"></div>
+                                <h4 class="text-xs font-black font-outfit text-white drop-shadow-md line-clamp-2 relative z-10 pr-6">{{ $card['challenge']->title }}</h4>
+                                
+                                {{-- Match Score Circle --}}
+                                <div class="absolute top-2 right-2">
+                                    <div class="w-8 h-8 bg-white/20 backdrop-blur-md rounded-full border border-white/30 flex flex-col items-center justify-center shadow">
+                                        <span class="text-[10px] font-black text-white leading-none">{{ $card['score']['score'] }}%</span>
+                                        <span class="text-[4px] text-white/90 uppercase font-extrabold tracking-widest leading-none mt-0.5">Match</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {{-- Preview Details --}}
+                            <div class="p-3 space-y-2 text-[10px]">
+                                <div class="flex justify-between items-center border-b border-slate-100 dark:border-zinc-800/80 pb-1.5">
+                                    <span class="text-slate-400 dark:text-zinc-500 font-bold uppercase tracking-wider text-[9px]">Budget Pool</span>
+                                    <span class="font-extrabold text-purple-600 dark:text-purple-400">₹{{ number_format($card['challenge']->budget_min) }} - ₹{{ number_format($card['challenge']->budget_max) }}</span>
+                                </div>
+                                <div class="flex justify-between items-center border-b border-slate-100 dark:border-zinc-800/80 pb-1.5">
+                                    <span class="text-slate-400 dark:text-zinc-500 font-bold uppercase tracking-wider text-[9px]">Deadline</span>
+                                    <span class="font-bold text-slate-700 dark:text-zinc-300">{{ $card['challenge']->deadline->format('M d, Y') }}</span>
+                                </div>
+
+                                @if(is_array($card['challenge']->required_tags) && count($card['challenge']->required_tags) > 0)
+                                    <div class="flex flex-wrap gap-1 pt-1">
+                                        @foreach(array_slice($card['challenge']->required_tags, 0, 4) as $tag)
+                                            <span class="text-[9px] font-bold text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/30 px-1.5 py-0.5 rounded border border-primary-100 dark:border-primary-800/40">#{{ $tag }}</span>
+                                        @endforeach
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+
+                        {{-- Document Brief Attachment Card --}}
+                        @if($card['challenge']->attachment_path)
+                            <div class="mb-4 flex-shrink-0">
+                                <a href="{{ asset('storage/' . $card['challenge']->attachment_path) }}" target="_blank" class="inline-flex items-center gap-1.5 w-full p-2.5 bg-purple-50 dark:bg-purple-950/20 border border-purple-200/50 dark:border-purple-800/50 rounded-xl text-[10px] font-bold text-purple-700 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-900/30 transition shadow-sm">
+                                    <svg class="w-4 h-4 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                    </svg>
+                                    Brief: {{ Str::limit($card['challenge']->attachment_filename, 24) }}
+                                </a>
+                            </div>
+                        @endif
+
+                        {{-- Social reactions --}}
+                        <div class="flex items-center justify-between text-[10px] text-slate-450 dark:text-zinc-550 border-t border-slate-100 dark:border-zinc-800/80 pt-3 mt-auto flex-shrink-0 font-medium">
+                            <div class="flex items-center gap-1">
+                                <span class="text-xs">👍❤️</span>
+                                <span>{{ 4 + ($card['challenge']->id * 2) }} applicants • 3 comments</span>
+                            </div>
+                            <span>8 shares</span>
+                        </div>
+                    </div>
+
+                @else
+                    {{-- ── CORPORATE VIEW: GENERAL SWIPE FOR STARTUPS ── --}}
+                    
+                    {{-- Card Header Gradient --}}
+                    <div class="h-40 bg-gradient-to-br {{ $bgGradient }} relative overflow-hidden">
+                        <div class="absolute inset-0 noise opacity-20"></div>
+                        <div class="absolute inset-0 bg-white/10 mesh-gradient opacity-30"></div>
+                        
+                        {{-- Compatibility Ring --}}
+                        <div class="absolute top-6 right-6">
+                            <div class="relative w-16 h-16 bg-white/20 backdrop-blur-md rounded-full shadow-lg flex items-center justify-center border border-white/30">
+                                <svg class="w-16 h-16 absolute inset-0 -rotate-90" viewBox="0 0 36 36">
+                                    <circle cx="18" cy="18" r="15" fill="none"
+                                        stroke="@if($card['score']['color'] === 'green') #10b981 @elseif($card['score']['color'] === 'blue') #3b82f6 @elseif($card['score']['color'] === 'yellow') #eab308 @else #ef4444 @endif"
+                                        stroke-width="3" stroke-dasharray="{{ $card['score']['score'] }}, 100" stroke-linecap="round"/>
+                                </svg>
+                                <div class="flex flex-col items-center">
+                                    <span class="text-xl font-black text-white drop-shadow-md leading-none">{{ $card['score']['score'] }}</span>
+                                    <span class="text-[8px] text-white/90 uppercase font-bold tracking-wider mt-0.5">Match</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Avatar --}}
+                    <div class="absolute top-28 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
+                        <div class="w-24 h-24 rounded-[1.5rem] bg-white ring-4 ring-white dark:ring-gray-900 shadow-xl overflow-hidden p-1">
+                            <img src="{{ $card['user']->logoUrl() }}" alt="" class="w-full h-full object-cover rounded-xl">
+                        </div>
+                    </div>
+                    
+                    {{-- Card Body --}}
+                    <div class="px-8 pb-8 h-[calc(100%-160px)] flex flex-col overflow-y-auto hide-scrollbar relative">
+                        <div class="h-[72px] flex-shrink-0"></div>
+                        
+                        {{-- Title & Info --}}
+                        <div class="text-center mb-6">
+                            <h2 class="text-2xl font-black font-outfit text-gray-900 dark:text-white">{{ $card['user']->companyName() }}</h2>
+                            <p class="text-sm font-bold text-primary-600 dark:text-primary-400 uppercase tracking-wider mt-1">{{ $card['profile']?->industry?->name ?? 'Industry' }}</p>
+                            @if($card['profile']?->city)
+                                <p class="text-xs font-semibold text-gray-500 mt-2 bg-gray-100 dark:bg-gray-800 inline-block px-3 py-1 rounded-full font-outfit">📍 {{ $card['profile']->city }}{{ $card['profile']->state ? ', '.$card['profile']->state : '' }}</p>
+                            @endif
+                        </div>
+
+                        {{-- Dynamic Content --}}
+                        @if($card['user']->isStartup() && $card['profile'])
+                            <div class="flex flex-wrap justify-center gap-2 mb-6">
+                                <span class="text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-xl {{ $card['profile']->stageColor() }}">{{ $card['profile']->stageLabel() }}</span>
+                                @if($card['profile']->team_size)<span class="text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">👥 {{ $card['profile']->team_size }}</span>@endif
+                            </div>
+                            <div class="bg-gray-50 dark:bg-gray-805/50 rounded-2xl p-4 mb-6">
+                                <p class="text-sm text-gray-750 dark:text-gray-300 font-medium leading-relaxed italic text-center">"{{ $card['profile']->elevator_pitch }}"</p>
+                            </div>
+                            @if($card['profile']->tech_tags && count($card['profile']->tech_tags) > 0)
+                                <div class="flex flex-wrap justify-center gap-1.5 mb-6">
+                                    @foreach(array_slice($card['profile']->tech_tags, 0, 5) as $tag)
+                                        <span class="text-xs font-bold px-2.5 py-1 rounded-lg bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 border border-primary-100 dark:border-primary-800/40">#{{ $tag }}</span>
+                                    @endforeach
+                                </div>
+                            @endif
+                        @endif
+
+                        {{-- AI Insights Accordion --}}
+                        <details class="mt-auto group bg-gray-50 dark:bg-gray-800/50 rounded-2xl overflow-hidden transition-all duration-300 border border-gray-100 dark:border-gray-700">
+                            <summary class="cursor-pointer text-xs font-bold p-4 list-none flex items-center justify-between text-gray-900 dark:text-white select-none">
+                                <span class="flex items-center gap-2">
+                                    <span class="w-6 h-6 rounded-full bg-primary-100 dark:bg-primary-900/50 text-primary-600 flex items-center justify-center">🤖</span>
+                                    AI Compatibility Insights
+                                </span>
+                                <svg class="w-4 h-4 text-gray-400 group-open:rotate-180 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+                            </summary>
+                            <div class="px-4 pb-4 space-y-3 border-t border-gray-200 dark:border-gray-700 pt-3">
+                                @foreach($card['score']['breakdown'] as $key => $item)
+                                    <div class="flex items-center gap-3 text-xs font-medium">
+                                        <span class="w-24 text-gray-500 uppercase tracking-wider text-[10px] font-bold">{{ $item['label'] }}</span>
+                                        <div class="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden shadow-inner">
+                                            <div class="h-full bg-gradient-to-r from-primary-400 to-purple-500 rounded-full transition-all" style="width: {{ $item['max'] > 0 ? ($item['score'] / $item['max']) * 100 : 0 }}%"></div>
+                                        </div>
+                                        <span class="font-bold text-gray-900 dark:text-white w-8 text-right">{{ round($item['score']) }}/{{ $item['max'] }}</span>
+                                    </div>
+                                @endforeach
+                                <div class="text-center mt-3 pt-3 border-t border-gray-200 dark:border-gray-700/50">
+                                    <a href="{{ route('profile.show', $card['user']) }}" target="_blank" class="text-xs font-bold text-primary-600 hover:text-primary-700 uppercase tracking-wider">View Full Profile ↗</a>
+                                </div>
+                            </div>
+                        </details>
+                    </div>
+                @endif
+
             </div>
         @endforeach
     </div>
@@ -199,7 +282,7 @@
     {{-- Controls --}}
     @if(count($cards) > 0)
     <div class="flex items-center justify-center gap-8 mt-12 relative z-20 reveal reveal-delay-2" x-show="currentIndex < cards.length">
-        <button @click="swipeAction('skipped')" class="w-16 h-16 rounded-2xl bg-white dark:bg-gray-800 shadow-xl shadow-gray-200/50 dark:shadow-none border-2 border-gray-100 dark:border-gray-700 flex items-center justify-center hover:scale-110 hover:border-red-400 transition-all group group-hover:rotate-12">
+        <button @click="swipeAction('skipped')" class="w-16 h-16 rounded-2xl bg-white dark:bg-[#0d0d12] shadow-xl shadow-gray-200/50 dark:shadow-none border-2 border-slate-200 dark:border-zinc-800 flex items-center justify-center hover:scale-110 hover:border-red-400 transition-all group group-hover:rotate-12">
             <svg class="w-8 h-8 text-red-500 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
         <button @click="swipeAction('interested')" class="w-20 h-20 rounded-[2rem] bg-gradient-to-br from-primary-500 to-pink-500 shadow-[0_15px_35px_rgba(236,72,153,0.4)] flex items-center justify-center hover:scale-110 transition-all group group-hover:-rotate-12">
@@ -207,7 +290,7 @@
         </button>
     </div>
     <div class="text-center mt-6 reveal reveal-delay-3" x-show="currentIndex < cards.length">
-        <p class="inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-white/50 dark:bg-gray-800/50 backdrop-blur border border-gray-200 dark:border-gray-700 text-xs font-bold text-gray-500">
+        <p class="inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-white/50 dark:bg-zinc-900/50 backdrop-blur border border-slate-200 dark:border-zinc-800 text-xs font-bold text-slate-500">
             <span class="text-primary-600 dark:text-primary-400 mr-1" x-text="cards.length - currentIndex"></span> cards remaining
         </p>
     </div>
@@ -241,6 +324,164 @@
             </div>
         </div>
     </div>
+
+    {{-- ── 1. CHALLENGE DETAILS MODAL ── --}}
+    <div x-show="detailsOpen" x-cloak class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-950/80 backdrop-blur-md animate-fade-in"
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         @keydown.escape.window="detailsOpen = false">
+        
+        <div class="relative w-full max-w-lg glass-card-strong border-glow rounded-[2.5rem] p-8 shadow-2xl bg-white dark:bg-[#0d0d12]/95 overflow-hidden flex flex-col max-h-[85vh] scale-95 transition-all duration-300 animate-slide-up"
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="scale-90"
+             x-transition:enter-end="scale-100"
+             @click.outside="detailsOpen = false">
+            
+            <button @click="detailsOpen = false" class="absolute top-6 right-6 p-2 rounded-full hover:bg-slate-100 dark:hover:bg-zinc-800 transition">
+                <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+
+            <div class="flex items-center gap-3 mb-4 flex-shrink-0">
+                <template x-if="activeChallenge && activeChallenge.logo_url">
+                    <img :src="activeChallenge.logo_url" class="w-12 h-12 rounded-xl object-cover border border-slate-200 dark:border-zinc-800">
+                </template>
+                <div class="min-w-0">
+                    <div class="flex items-center gap-1.5">
+                        <span class="font-black text-xs text-slate-800 dark:text-zinc-200 truncate" x-text="activeChallenge?.corporate_name"></span>
+                        <span class="text-blue-500 text-[10px]">✔</span>
+                    </div>
+                    <span class="inline-flex items-center gap-1 text-[9px] font-black uppercase bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 px-2 py-0.5 rounded" x-text="activeChallenge?.industry_name"></span>
+                </div>
+            </div>
+
+            <h3 class="text-xl font-black font-outfit text-slate-900 dark:text-white leading-snug mb-4 flex-shrink-0" x-text="activeChallenge?.title"></h3>
+
+            <div class="flex-1 overflow-y-auto hide-scrollbar space-y-4 pr-1 text-xs sm:text-sm text-slate-600 dark:text-zinc-300 font-medium leading-relaxed mb-6">
+                <div>
+                    <h4 class="font-bold text-slate-900 dark:text-white uppercase tracking-wider text-[10px] mb-2">Challenge Overview</h4>
+                    <p class="whitespace-pre-line" x-text="activeChallenge?.description"></p>
+                </div>
+                
+                <div>
+                    <h4 class="font-bold text-slate-900 dark:text-white uppercase tracking-wider text-[10px] mb-2">Key Requirements</h4>
+                    <p class="whitespace-pre-line bg-yellow-50/50 dark:bg-yellow-950/10 border border-yellow-200/50 dark:border-yellow-800/30 rounded-xl p-3.5" x-text="activeChallenge?.requirements"></p>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 bg-slate-50 dark:bg-zinc-900/40 border border-slate-100 dark:border-zinc-800/50 rounded-2xl p-4 text-[11px] font-bold">
+                    <div>
+                        <span class="text-gray-400 dark:text-zinc-500 block mb-0.5">Budget Pool</span>
+                        <span class="text-primary-600 dark:text-primary-400 text-xs sm:text-sm font-extrabold" x-text="'₹' + activeChallenge?.budget_min + ' - ₹' + activeChallenge?.budget_max"></span>
+                    </div>
+                    <div>
+                        <span class="text-gray-400 dark:text-zinc-500 block mb-0.5">Deadline</span>
+                        <span class="text-slate-800 dark:text-zinc-200 text-xs sm:text-sm font-black" x-text="activeChallenge?.deadline"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex gap-3 flex-shrink-0 pt-4 border-t border-slate-100 dark:border-zinc-800/80">
+                <button @click="detailsOpen = false" class="flex-1 py-3.5 rounded-xl border border-slate-200 dark:border-zinc-800 text-slate-700 dark:text-zinc-300 font-extrabold text-xs hover:bg-slate-50 dark:hover:bg-zinc-800 transition">
+                    Close Details
+                </button>
+                <button @click="detailsOpen = false; applyOpen = true; cover_letter = ''; approach = ''; submissionErrors = {};" 
+                        class="flex-grow py-3.5 rounded-xl bg-primary-600 hover:bg-primary-750 text-white font-extrabold text-xs shadow-md shadow-primary-500/25 transition hover:scale-[1.01]">
+                    Apply & Give Solution 🚀
+                </button>
+            </div>
+        </div>
+    </div>
+
+    {{-- ── 2. SUBMIT SOLUTION MODAL ── --}}
+    <div x-show="applyOpen" x-cloak class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-950/85 backdrop-blur-md animate-fade-in"
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         @keydown.escape.window="applyOpen = false">
+        
+        <div class="relative w-full max-w-lg glass-card-strong border-glow rounded-[2.5rem] p-8 shadow-2xl bg-white dark:bg-[#0d0d12]/95 overflow-hidden flex flex-col max-h-[90vh] scale-95 transition-all duration-300 animate-slide-up"
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="scale-90"
+             x-transition:enter-end="scale-100"
+             @click.outside="if(!isSubmitting) applyOpen = false">
+            
+            <button @click="applyOpen = false" x-show="!isSubmitting" class="absolute top-6 right-6 p-2 rounded-full hover:bg-slate-100 dark:hover:bg-zinc-800 transition">
+                <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+
+            <div class="mb-4 flex-shrink-0">
+                <h3 class="text-xl font-black font-outfit text-slate-900 dark:text-white mb-1">Give Your Solution</h3>
+                <p class="text-xs text-slate-500 dark:text-zinc-400 font-semibold" x-text="'For: ' + activeChallenge?.title"></p>
+            </div>
+
+            <div class="flex-1 overflow-y-auto hide-scrollbar space-y-4 pr-1 pb-4 flex flex-col">
+                {{-- Cover Letter Field --}}
+                <div class="text-xs">
+                    <div class="flex justify-between items-center mb-1.5">
+                        <label class="block font-bold text-slate-700 dark:text-zinc-300">Cover Letter <span class="text-red-500">*</span></label>
+                        <span class="text-[9px] font-black uppercase px-2 py-0.5 rounded animate-pulse-glow"
+                              :class="cover_letter.length >= 50 ? 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400' : 'bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400'"
+                              x-text="cover_letter.length + '/2000 chars'">
+                        </span>
+                    </div>
+                    <textarea x-model="cover_letter" :disabled="isSubmitting" rows="4" required 
+                              class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900/60 focus:border-primary-500 outline-none text-slate-800 dark:text-zinc-200 font-medium"
+                              placeholder="Describe why your team is exceptionally qualified to solve this challenge (min 50 characters)..."></textarea>
+                    <template x-if="submissionErrors.cover_letter">
+                        <p class="text-red-500 text-[10px] mt-1 font-bold animate-bounce-in" x-text="submissionErrors.cover_letter[0]"></p>
+                    </template>
+                </div>
+
+                {{-- Approach Field --}}
+                <div class="text-xs">
+                    <div class="flex justify-between items-center mb-1.5">
+                        <label class="block font-bold text-slate-700 dark:text-zinc-300">Technical Approach / Solution <span class="text-gray-400 font-medium">(optional)</span></label>
+                        <span class="text-[9px] text-gray-400" x-text="approach.length + '/3000 chars'"></span>
+                    </div>
+                    <textarea x-model="approach" :disabled="isSubmitting" rows="5" 
+                              class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900/60 focus:border-primary-500 outline-none text-slate-800 dark:text-zinc-200 font-medium"
+                              placeholder="Detail your proposed approach, target architecture, technology stack, and project milestones..."></textarea>
+                    <template x-if="submissionErrors.approach">
+                        <p class="text-red-500 text-[10px] mt-1 font-bold animate-bounce-in" x-text="submissionErrors.approach[0]"></p>
+                    </template>
+                </div>
+
+                {{-- Proposal Document --}}
+                <div class="text-xs">
+                    <label class="block font-bold text-slate-700 dark:text-zinc-300 mb-1.5">Proposal Document <span class="text-gray-400 font-medium">(PDF/DOC, max 5MB, optional)</span></label>
+                    <div class="p-4 rounded-xl border border-dashed border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900/40 hover:bg-slate-100 dark:hover:bg-zinc-900/60 transition cursor-pointer relative flex flex-col items-center justify-center text-center">
+                        <input type="file" x-ref="proposalFile" :disabled="isSubmitting" accept=".pdf,.doc,.docx" 
+                               class="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10">
+                        <svg class="w-8 h-8 text-slate-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+                        <span class="text-[10px] font-bold text-slate-500 dark:text-zinc-400">Click to upload proposal brief</span>
+                        <span class="text-[8px] text-gray-400 mt-0.5">Supports PDF, DOC, DOCX up to 5MB</span>
+                    </div>
+                    <template x-if="submissionErrors.proposal_file">
+                        <p class="text-red-500 text-[10px] mt-1 font-bold animate-bounce-in" x-text="submissionErrors.proposal_file[0]"></p>
+                    </template>
+                </div>
+            </div>
+
+            <div class="flex gap-3 flex-shrink-0 pt-4 border-t border-slate-100 dark:border-zinc-800/80">
+                <button @click="applyOpen = false" :disabled="isSubmitting" class="flex-1 py-3.5 rounded-xl border border-slate-200 dark:border-zinc-800 text-slate-700 dark:text-zinc-300 font-extrabold text-xs hover:bg-slate-50 dark:hover:bg-zinc-800 transition disabled:opacity-50">
+                    Cancel
+                </button>
+                <button @click="submitSolution()" :disabled="isSubmitting || cover_letter.length < 50" 
+                        class="flex-grow py-3.5 rounded-xl bg-primary-600 hover:bg-primary-750 text-white font-extrabold text-xs shadow-md shadow-primary-500/25 transition hover:scale-[1.01] flex items-center justify-center gap-2 disabled:opacity-50 disabled:scale-100 disabled:hover:bg-primary-600">
+                    <template x-if="isSubmitting">
+                        <svg class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    </template>
+                    <span x-text="isSubmitting ? 'Submitting Proposal...' : 'Submit & Swipe Right 🚀'"></span>
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
 
 @push('scripts')
@@ -253,12 +494,112 @@ function swipeApp() {
         matchShown: false,
         matchName: '',
         matchConnectionId: null,
-        cards: @json($cards->map(fn($c) => ['id' => $c['user']->id])),
+        isStartup: {{ auth()->user()->isStartup() ? 'true' : 'false' }},
         
+        // Modals & Application state
+        detailsOpen: false,
+        applyOpen: false,
+        activeChallenge: null,
+        cover_letter: '',
+        approach: '',
+        isSubmitting: false,
+        submissionErrors: {},
+
+        cards: {!! json_encode($cards->map(fn($c) => [
+            'id' => auth()->user()->isStartup() ? $c['challenge']->id : $c['user']->id,
+            'is_challenge' => auth()->user()->isStartup() ? true : false,
+            'challenge' => auth()->user()->isStartup() ? [
+                'id' => $c['challenge']->id,
+                'title' => $c['challenge']->title,
+                'description' => $c['challenge']->description,
+                'requirements' => $c['challenge']->requirements ?? 'None listed by partner.',
+                'budget_min' => number_format($c['challenge']->budget_min),
+                'budget_max' => number_format($c['challenge']->budget_max),
+                'deadline' => $c['challenge']->deadline->format('M d, Y'),
+                'attachment_path' => $c['challenge']->attachment_path ? asset('storage/' . $c['challenge']->attachment_path) : null,
+                'attachment_filename' => $c['challenge']->attachment_filename,
+                'corporate_name' => $c['user']->companyName(),
+                'logo_url' => $c['user']->logoUrl(),
+                'industry_name' => $c['profile']?->industry?->name ?? 'Corporate Partner',
+                'match_score' => $c['score']['score'] ?? 0
+            ] : null
+        ])) !!},
+        
+        openChallengeDetails(index) {
+            this.activeChallenge = this.cards[index].challenge;
+            this.detailsOpen = true;
+        },
+
+        async submitSolution() {
+            if (!this.activeChallenge) return;
+            const challengeId = this.activeChallenge.id;
+            
+            const formData = new FormData();
+            formData.append('cover_letter', this.cover_letter);
+            formData.append('approach', this.approach);
+            if (this.$refs.proposalFile && this.$refs.proposalFile.files[0]) {
+                formData.append('proposal_file', this.$refs.proposalFile.files[0]);
+            }
+
+            try {
+                this.isSubmitting = true;
+                this.submissionErrors = {};
+
+                const res = await fetch(`/startup/challenges/${challengeId}/apply`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json'
+                    },
+                    body: formData
+                });
+
+                if (res.status === 422) {
+                    const data = await res.json();
+                    this.submissionErrors = data.errors;
+                    this.isSubmitting = false;
+                    return;
+                }
+
+                if (res.ok) {
+                    this.applyOpen = false;
+                    this.isSubmitting = false;
+                    this.cover_letter = '';
+                    this.approach = '';
+                    if (this.$refs.proposalFile) this.$refs.proposalFile.value = '';
+                    
+                    // Trigger the swipe right animation and register swipe signal in DB
+                    await this.executeSwipe(this.currentIndex, 'interested');
+                } else {
+                    alert("Submission failed. Please check your fields and try again.");
+                    this.isSubmitting = false;
+                }
+            } catch (e) {
+                console.error("Proposal submission failed", e);
+                this.isSubmitting = false;
+            }
+        },
+
         async swipeAction(action) {
             if (this.currentIndex >= this.cards.length) return;
             
             const cardIndex = this.currentIndex;
+            const card = this.cards[cardIndex];
+            
+            if (action === 'interested' && card.is_challenge) {
+                // Intercept right swipe for challenges to request solution proposal
+                this.activeChallenge = card.challenge;
+                this.cover_letter = '';
+                this.approach = '';
+                this.submissionErrors = {};
+                this.applyOpen = true;
+                return;
+            }
+            
+            await this.executeSwipe(cardIndex, action);
+        },
+
+        async executeSwipe(cardIndex, action) {
             const card = this.cards[cardIndex];
             
             // Trigger animation class
@@ -278,7 +619,11 @@ function swipeApp() {
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
                         'Accept': 'application/json'
                     },
-                    body: JSON.stringify({ target_id: card.id, action: action })
+                    body: JSON.stringify({ 
+                        target_id: card.id, 
+                        action: action, 
+                        is_challenge: card.is_challenge 
+                    })
                 });
                 const data = await res.json();
                 
@@ -296,6 +641,7 @@ function swipeApp() {
                 console.error("Swipe failed", e);
             }
         },
+
         closeMatch() {
             this.matchShown = false;
         }

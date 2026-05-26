@@ -1,10 +1,17 @@
 <!DOCTYPE html>
-<html lang="en" class="scroll-smooth dark">
+<html lang="en" class="scroll-smooth">
 <head>
+    <script>
+        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="<?php echo e(csrf_token()); ?>">
-    <title><?php echo $__env->yieldContent('title', 'StartupConnect'); ?> - <?php echo e(config('app.name')); ?></title>
+    <title><?php echo $__env->yieldContent('title', 'Syncora'); ?> - <?php echo e(config('app.name')); ?></title>
 
     <!-- Tailwind via CDN (Pinned to v3 to support JS config) -->
     <script src="https://cdn.tailwindcss.com/3.4.16"></script>
@@ -128,10 +135,10 @@
         .dark .border-glow { box-shadow: 0 0 20px rgba(99, 102, 241, 0.15); border-color: rgba(99, 102, 241, 0.2); }
         
         .glass-card {
-            background: rgba(255,255,255,0.6);
+            background: rgba(255,255,255,0.7);
             backdrop-filter: blur(20px) saturate(150%); -webkit-backdrop-filter: blur(20px) saturate(150%);
-            border: 1px solid rgba(255,255,255,0.4);
-            box-shadow: 0 8px 32px rgba(0,0,0,0.06);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.04);
         }
         .dark .glass-card {
             background: rgba(13, 13, 18, 0.7);
@@ -142,8 +149,8 @@
         .glass-card-strong {
             background: rgba(255,255,255,0.85);
             backdrop-filter: blur(24px) saturate(180%); -webkit-backdrop-filter: blur(24px) saturate(180%);
-            border: 1px solid rgba(255,255,255,0.6);
-            box-shadow: 0 10px 40px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.8);
+            border: 1px solid rgba(226, 232, 240, 0.9);
+            box-shadow: 0 10px 40px rgba(31, 38, 135, 0.06), inset 0 1px 0 rgba(255,255,255,0.9);
         }
         .dark .glass-card-strong {
             background: rgba(13, 13, 18, 0.85);
@@ -152,27 +159,18 @@
             backdrop-filter: blur(24px);
         }
 
-        /* ── Glow Shadows ── */
-        .glow-purple { box-shadow: 0 0 20px rgba(139,92,246,0.3), 0 8px 32px rgba(139,92,246,0.15); }
-        .glow-blue   { box-shadow: 0 0 20px rgba(59,130,246,0.3), 0 8px 32px rgba(59,130,246,0.15); }
-        .glow-pink   { box-shadow: 0 0 20px rgba(236,72,153,0.3), 0 8px 32px rgba(236,72,153,0.15); }
-        .glow-green  { box-shadow: 0 0 20px rgba(16,185,129,0.3), 0 8px 32px rgba(16,185,129,0.15); }
-        .glow-orange { box-shadow: 0 0 20px rgba(245,158,11,0.3), 0 8px 32px rgba(245,158,11,0.15); }
-
-        /* ── Card Lift (premium hover) ── */
+        /* ── Card Lift (clean B2B SaaS hover) ── */
         .card-lift {
-            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
-                        box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1),
-                        border-color 0.3s ease;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
         }
         .card-lift:hover {
-            transform: translateY(-8px) scale(1.01);
-            box-shadow: 0 24px 60px rgba(99,102,241,0.15), 0 12px 24px rgba(0,0,0,0.08);
-            border-color: rgba(99,102,241,0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 24px -10px rgba(0, 0, 0, 0.08), 0 4px 12px -5px rgba(0, 0, 0, 0.03);
+            border-color: #cbd5e1;
         }
         .dark .card-lift:hover {
-            box-shadow: 0 24px 60px rgba(168, 85, 247, 0.12), 0 12px 24px rgba(0,0,0,0.3);
-            border-color: rgba(168, 85, 247, 0.4);
+            box-shadow: 0 12px 24px -10px rgba(0, 0, 0, 0.5);
+            border-color: #334155;
         }
 
         /* ── Gradient Text ── */
@@ -180,63 +178,6 @@
             background: linear-gradient(135deg, #6366f1, #a855f7, #ec4899);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
             background-clip: text;
-        }
-
-        /* ── Magnetic Buttons ── */
-        .magnetic {
-            transition: transform 0.2s cubic-bezier(0.2, 0, 0.2, 1);
-            will-change: transform;
-        }
-
-        /* ── Shimmer Button ── */
-        @keyframes btnShimmer { 0% { left: -100%; } 100% { left: 100%; } }
-        .shimmer-btn { position: relative; overflow: hidden; }
-        .shimmer-btn::after {
-            content: ''; position: absolute; top: 0; left: -100%; width: 50%; height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-            transition: none; transform: skewX(-20deg);
-        }
-        .shimmer-btn:hover::after { animation: btnShimmer 0.7s ease; }
-
-        /* ── 3D Tilt Card Effect ── */
-        .tilt-card {
-            transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
-            transform-style: preserve-3d;
-            will-change: transform;
-        }
-        .tilt-card:hover {
-            transform: perspective(1000px) rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg)) translateY(-6px);
-        }
-
-        /* ── Floating Blobs (animated background elements) ── */
-        @keyframes blobFloat {
-            0%,100% { transform: translate(0,0) scale(1); }
-            25%     { transform: translate(30px,-40px) scale(1.05); }
-            50%     { transform: translate(-20px,-60px) scale(0.95); }
-            75%     { transform: translate(40px,-20px) scale(1.02); }
-        }
-        .blob {
-            position: absolute; border-radius: 50%;
-            filter: blur(60px); opacity: 0.4;
-            animation: blobFloat 20s ease-in-out infinite;
-            pointer-events: none;
-        }
-        .dark .blob { opacity: 0.25; filter: blur(80px); }
-
-        /* ── Animated Mesh Gradient ── */
-        @keyframes meshMove {
-            0%,100% { background-position: 0% 50%; }
-            50%     { background-position: 100% 50%; }
-        }
-        .mesh-gradient {
-            background: linear-gradient(-45deg, #0a0520, #2d1b69, #5b21b6, #9d174d, #4c1d95, #1e1b4b, #0a0520);
-            background-size: 300% 300%;
-            animation: meshMove 15s ease infinite;
-        }
-        .mesh-gradient-light {
-            background: linear-gradient(-45deg, #eef2ff, #e0e7ff, #c4b5fd, #f0abfc, #fbcfe8, #e0e7ff, #eef2ff);
-            background-size: 300% 300%;
-            animation: meshMove 15s ease infinite;
         }
 
         /* ── Noise Texture ── */
@@ -263,15 +204,71 @@
         }
         [data-tooltip]:hover::before { opacity: 1; visibility: visible; transform: translateX(-50%) translateY(-4px); }
         [data-tooltip]:hover::after  { opacity: 1; visibility: visible; transform: translateX(-50%) translateY(4px); }
+
+        /* ═══════════════════════════════════════════════
+           NAVBAR ACTIVE STYLES — applied to every page
+           ═══════════════════════════════════════════════ */
+        .nav-link {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 13px;
+            font-size: 11.5px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: #64748b;
+            border-radius: 6px;
+            white-space: nowrap;
+            transition: color 0.15s ease;
+            text-decoration: none;
+        }
+        .nav-link:hover { color: #1e293b; }
+        .dark .nav-link { color: #94a3b8; }
+        .dark .nav-link:hover { color: #f1f5f9; }
+
+        /* Active = dark filled rounded block (like HOME in reference) */
+        .nav-link.nav-link-active {
+            background-color: #2e3a46 !important;
+            color: #ffffff !important;
+            font-weight: 800 !important;
+            border-radius: 6px !important;
+            padding: 6px 14px !important;
+            box-shadow: 0 1px 5px rgba(0,0,0,0.22) !important;
+        }
+        .dark .nav-link.nav-link-active {
+            background-color: #3f4d5a !important;
+            color: #ffffff !important;
+        }
+
+        /* Mobile nav links */
+        .mobile-nav-link {
+            display: block;
+            padding: 10px 16px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: #475569;
+            border-radius: 8px;
+            white-space: nowrap;
+            transition: background 0.15s ease, color 0.15s ease;
+            text-decoration: none;
+        }
+        .mobile-nav-link:hover { background-color: #f1f5f9; color: #0f172a; }
+        .dark .mobile-nav-link { color: #94a3b8; }
+        .dark .mobile-nav-link:hover { background-color: #1e293b; color: #f8fafc; }
+        .mobile-nav-link.mobile-nav-link-active {
+            background-color: #2e3a46 !important;
+            color: #ffffff !important;
+            font-weight: 800 !important;
+        }
     </style>
 
     <?php echo $__env->yieldPushContent('styles'); ?>
 </head>
-<body class="bg-[#090909] text-white min-h-screen flex flex-col overflow-x-hidden relative">
+<body class="bg-slate-50 text-slate-900 dark:bg-[#090909] dark:text-white min-h-screen flex flex-col overflow-x-hidden relative transition-colors duration-300">
 
 <!-- ── Background Layers ── -->
-<div id="cursor-glow" class="pointer-events-none fixed inset-0 z-0 transition-opacity duration-300 opacity-0 dark:opacity-40" style="background: radial-gradient(600px circle at 0px 0px, rgba(99, 102, 241, 0.08), transparent 40%);"></div>
-<canvas id="particle-canvas" class="fixed inset-0 pointer-events-none z-0 opacity-30 dark:opacity-50"></canvas>
 
 <!-- ── Top progress bar ── -->
 <div id="nprogress" style="width:0"></div>
@@ -308,12 +305,12 @@
 <footer class="mt-auto border-t border-gray-200/60 dark:border-gray-800/60 bg-white/50 dark:bg-gray-900/50 backdrop-blur-md relative z-10 py-6 mt-12">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
         <div class="flex items-center gap-2">
-            <div class="w-6 h-6 rounded-lg bg-gradient-to-br from-primary-500 to-purple-600 flex items-center justify-center shadow-md">
-                <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            <div class="w-6 h-6 rounded-full overflow-hidden relative bg-white flex items-center justify-center shadow-sm border border-slate-200/45 dark:border-white/10 flex-shrink-0">
+                <img src="<?php echo e(asset('images/logo.png')); ?>" class="w-full h-full object-cover scale-[1.7] -translate-y-[15%] flex-shrink-0" alt="Syncora Icon">
             </div>
-            <span class="font-bold text-sm bg-gradient-to-r from-primary-600 to-purple-600 bg-clip-text text-transparent font-outfit">StartupConnect</span>
+            <img src="<?php echo e(asset('images/logo-text.png')); ?>" class="h-5 w-auto object-contain dark:invert transition-all duration-300" alt="Syncora Text">
         </div>
-        <p class="text-xs text-gray-500 dark:text-gray-400 font-medium">© <?php echo e(date('Y')); ?> StartupConnect. Built to accelerate innovation.</p>
+        <p class="text-xs text-gray-500 dark:text-gray-400 font-medium">© <?php echo e(date('Y')); ?> Syncora. Built to accelerate innovation.</p>
         <div class="flex items-center gap-4 text-xs font-semibold text-gray-500 dark:text-gray-400">
             <a href="#" class="hover:text-primary-600 dark:hover:text-primary-400 transition">Help Center</a>
             <a href="#" class="hover:text-primary-600 dark:hover:text-primary-400 transition">Privacy</a>
@@ -346,19 +343,149 @@
         if (bar) { bar.style.width = '100%'; setTimeout(() => bar.style.opacity = '0', 300); }
     });
 
+    // ── Premium Unsaved Changes Modal and Protection System ──────────────────
+    window.showUnsavedChangesModal = function(onConfirm, onCancel) {
+        let modal = document.getElementById('unsaved-changes-modal');
+        if (modal) modal.remove();
+
+        modal = document.createElement('div');
+        modal.id = 'unsaved-changes-modal';
+        modal.className = 'fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-opacity duration-300 opacity-0';
+        
+        modal.innerHTML = `
+            <div class="glass-card-strong w-full max-w-md rounded-2xl overflow-hidden shadow-2xl border border-gray-200/80 dark:border-gray-800/80 transform scale-95 transition-all duration-300 opacity-0 bg-white/95 dark:bg-[#0d0d12]/95">
+                <div class="p-6">
+                    <div class="flex items-center gap-3 mb-4 text-amber-500">
+                        <div class="w-10 h-10 rounded-full bg-amber-50 dark:bg-amber-950/30 flex items-center justify-center">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-white font-outfit">Unsaved Changes</h3>
+                    </div>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-6">
+                        You have unsaved changes on this page. Leaving will discard all edits you've made. Are you sure you want to proceed?
+                    </p>
+                    <div class="flex gap-3 justify-end">
+                        <button id="uc-modal-cancel" class="px-4 py-2 text-sm font-semibold rounded-xl border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition">
+                            Cancel
+                        </button>
+                        <button id="uc-modal-confirm" class="px-4 py-2 text-sm font-semibold rounded-xl bg-amber-500 hover:bg-amber-600 text-white shadow-md shadow-amber-500/20 transition">
+                            Discard & Leave
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        // Force reflow
+        modal.offsetWidth;
+
+        modal.classList.remove('opacity-0');
+        modal.querySelector('.glass-card-strong').classList.remove('scale-95', 'opacity-0');
+
+        const close = (confirmed) => {
+            modal.classList.add('opacity-0');
+            modal.querySelector('.glass-card-strong').classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modal.remove();
+                if (confirmed) {
+                    onConfirm();
+                } else {
+                    onCancel();
+                }
+            }, 200);
+        };
+
+        modal.querySelector('#uc-modal-cancel').addEventListener('click', () => close(false));
+        modal.querySelector('#uc-modal-confirm').addEventListener('click', () => close(true));
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) close(false);
+        });
+    };
+
+    let trackedForms = [];
+
+    function initFormTracking() {
+        trackedForms = [];
+        document.querySelectorAll('form[data-warn-unsaved]').forEach(form => {
+            const serialize = () => {
+                const formData = new FormData(form);
+                const data = {};
+                for (const [key, value] of formData.entries()) {
+                    if (value instanceof File) {
+                        data[key] = `${value.name}-${value.size}`;
+                    } else {
+                        if (key.endsWith('[]')) {
+                            if (!data[key]) data[key] = [];
+                            data[key].push(value);
+                        } else {
+                            data[key] = value;
+                        }
+                    }
+                }
+                return JSON.stringify(data);
+            };
+
+            const initialState = serialize();
+            let isSubmitted = false;
+
+            form.addEventListener('submit', () => {
+                isSubmitted = true;
+            });
+
+            trackedForms.push({
+                isDirty: () => {
+                    if (isSubmitted) return false;
+                    return serialize() !== initialState;
+                }
+            });
+        });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initFormTracking);
+    } else {
+        initFormTracking();
+    }
+
+    window.hasUnsavedChanges = function() {
+        return trackedForms.some(f => f.isDirty());
+    };
+
+    window.addEventListener('beforeunload', function(e) {
+        if (window.hasUnsavedChanges && window.hasUnsavedChanges()) {
+            e.preventDefault();
+            e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+            return e.returnValue;
+        }
+    });
+
     document.addEventListener('click', function(e) {
         const a = e.target.closest('a[href]');
         if (!a) return;
         const href = a.getAttribute('href');
         if (!href || href.startsWith('#') || href.startsWith('http') || href.startsWith('mailto') || a.target === '_blank') return;
         if (e.ctrlKey || e.metaKey || e.shiftKey) return;
+        
         e.preventDefault();
-        if (page) {
-            page.style.animation = 'pageOut 0.2s ease forwards';
-            if (bar) { bar.style.opacity = '1'; bar.style.width = '30%'; }
-            setTimeout(() => { window.location.href = href; }, 200);
+
+        const navigate = () => {
+            if (page) {
+                page.style.animation = 'pageOut 0.2s ease forwards';
+                if (bar) { bar.style.opacity = '1'; bar.style.width = '30%'; }
+                setTimeout(() => { window.location.href = href; }, 200);
+            } else {
+                window.location.href = href;
+            }
+        };
+
+        if (window.hasUnsavedChanges && window.hasUnsavedChanges()) {
+            window.showUnsavedChangesModal(navigate, () => {});
         } else {
-            window.location.href = href;
+            navigate();
         }
     });
 
@@ -416,84 +543,7 @@ document.querySelectorAll('.magnetic').forEach(btn => {
     });
 });
 
-// ── Cursor Glow Effect ─────────────────────────────────────────────────
-(function() {
-    const cursorGlow = document.getElementById('cursor-glow');
-    if (!cursorGlow) return;
-    
-    window.addEventListener('mousemove', (e) => {
-        const x = e.clientX;
-        const y = e.clientY;
-        cursorGlow.style.background = `radial-gradient(600px circle at ${x}px ${y}px, rgba(99, 102, 241, 0.08), transparent 40%)`;
-        cursorGlow.style.opacity = '1';
-    });
-})();
 
-// ── Animated Particle Canvas ───────────────────────────────────────────
-(function() {
-    const canvas = document.getElementById('particle-canvas');
-    if (!canvas) return;
-    
-    const ctx = canvas.getContext('2d');
-    let width, height;
-    let particles = [];
-    
-    function resize() {
-        width = canvas.width = window.innerWidth;
-        height = canvas.height = window.innerHeight;
-    }
-    
-    class Particle {
-        constructor() {
-            this.x = Math.random() * width;
-            this.y = Math.random() * height;
-            this.size = Math.random() * 1.5 + 0.5;
-            this.speedX = Math.random() * 0.5 - 0.25;
-            this.speedY = Math.random() * 0.5 - 0.25;
-            this.opacity = Math.random() * 0.5 + 0.1;
-        }
-        update() {
-            this.x += this.speedX;
-            this.y += this.speedY;
-            if (this.x < 0 || this.x > width) this.speedX *= -1;
-            if (this.y < 0 || this.y > height) this.speedY *= -1;
-        }
-        draw() {
-            ctx.fillStyle = document.documentElement.classList.contains('dark') 
-                ? `rgba(255, 255, 255, ${this.opacity})` 
-                : `rgba(99, 102, 241, ${this.opacity})`;
-            ctx.beginPath();
-            ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-            ctx.fill();
-        }
-    }
-    
-    function init() {
-        resize();
-        particles = [];
-        const particleCount = Math.min(Math.floor(window.innerWidth / 15), 100);
-        for (let i = 0; i < particleCount; i++) {
-            particles.push(new Particle());
-        }
-    }
-    
-    function animate() {
-        ctx.clearRect(0, 0, width, height);
-        particles.forEach(p => {
-            p.update();
-            p.draw();
-        });
-        requestAnimationFrame(animate);
-    }
-    
-    window.addEventListener('resize', () => {
-        resize();
-        init();
-    });
-    
-    init();
-    animate();
-})();
 
 // ── Count-up animation ─────────────────────────────────────────────────
 function animateValue(el) {

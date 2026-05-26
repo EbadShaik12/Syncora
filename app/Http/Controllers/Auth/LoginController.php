@@ -38,6 +38,20 @@ class LoginController extends Controller
             ]);
         }
 
+        if ($user->status === 'pending') {
+            Auth::logout();
+            throw ValidationException::withMessages([
+                'email' => 'Your account is pending admin approval. You will be notified once approved.',
+            ]);
+        }
+
+        if ($user->status === 'rejected') {
+            Auth::logout();
+            throw ValidationException::withMessages([
+                'email' => 'Your account application was not approved. Please contact support for more information.',
+            ]);
+        }
+
         $request->session()->regenerate();
 
         return redirect()->intended(route('dashboard'))

@@ -39,11 +39,20 @@ class ChallengeController extends Controller
             'budget_max'    => ['required', 'numeric', 'gte:budget_min'],
             'deadline'      => ['required', 'date', 'after:today'],
             'required_tags' => ['nullable', 'string'],
+            'attachment'    => ['nullable', 'file', 'mimes:ppt,pptx,pdf,doc,docx,jpeg,png,jpg,gif,svg,webp', 'max:20480'],
         ]);
 
         $tags = [];
         if (!empty($validated['required_tags'])) {
             $tags = array_filter(array_map('trim', explode(',', $validated['required_tags'])));
+        }
+
+        $attachmentPath = null;
+        $attachmentFilename = null;
+        if ($request->hasFile('attachment')) {
+            $file = $request->file('attachment');
+            $attachmentFilename = $file->getClientOriginalName();
+            $attachmentPath = $file->store('challenges/attachments', 'public');
         }
 
         Challenge::create([
@@ -57,6 +66,8 @@ class ChallengeController extends Controller
             'deadline'      => $validated['deadline'],
             'required_tags' => $tags,
             'status'        => 'open',
+            'attachment_path' => $attachmentPath,
+            'attachment_filename' => $attachmentFilename,
         ]);
 
         return redirect()->route('corporate.challenges.index')->with('success', 'Challenge posted successfully!');
@@ -85,11 +96,24 @@ class ChallengeController extends Controller
             'deadline'      => ['required', 'date'],
             'required_tags' => ['nullable', 'string'],
             'status'        => ['required', 'in:open,reviewing,closed'],
+            'attachment'    => ['nullable', 'file', 'mimes:ppt,pptx,pdf,doc,docx,jpeg,png,jpg,gif,svg,webp', 'max:20480'],
         ]);
 
         $tags = [];
         if (!empty($validated['required_tags'])) {
             $tags = array_filter(array_map('trim', explode(',', $validated['required_tags'])));
+        }
+
+        $attachmentPath = $challenge->attachment_path;
+        $attachmentFilename = $challenge->attachment_filename;
+        if ($request->hasFile('attachment')) {
+            // Delete old attachment if exists
+            if ($challenge->attachment_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($challenge->attachment_path)) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($challenge->attachment_path);
+            }
+            $file = $request->file('attachment');
+            $attachmentFilename = $file->getClientOriginalName();
+            $attachmentPath = $file->store('challenges/attachments', 'public');
         }
 
         $challenge->update([
@@ -102,6 +126,8 @@ class ChallengeController extends Controller
             'deadline'      => $validated['deadline'],
             'required_tags' => $tags,
             'status'        => $validated['status'],
+            'attachment_path' => $attachmentPath,
+            'attachment_filename' => $attachmentFilename,
         ]);
 
         return redirect()->route('corporate.challenges.index')->with('success', 'Challenge updated successfully!');
@@ -139,7 +165,7 @@ class ChallengeController extends Controller
         Notification::create([
             'user_id' => $application->startup_id,
             'title'   => 'Proposal Shortlisted! 🚀',
-            'message' => "Your proposal for challenge '{$application->challenge->title}' has been shortlisted by the corporate partner!",
+            'body'    => "Your proposal for challenge '{$application->challenge->title}' has been shortlisted by the corporate partner!",
             'type'    => 'milestone',
         ]);
 
@@ -153,7 +179,7 @@ class ChallengeController extends Controller
         Notification::create([
             'user_id' => $application->startup_id,
             'title'   => 'Proposal Update',
-            'message' => "We regret to inform you that your proposal for '{$application->challenge->title}' was not selected.",
+            'body'    => "We regret to inform you that your proposal for '{$application->challenge->title}' was not selected.",
             'type'    => 'milestone',
         ]);
 

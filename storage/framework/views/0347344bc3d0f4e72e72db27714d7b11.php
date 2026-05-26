@@ -1,4 +1,4 @@
-<?php $__env->startSection('title', 'Leaderboard — StartupConnect'); ?>
+<?php $__env->startSection('title', 'Leaderboard — Syncora'); ?>
 
 <?php $__env->startPush('styles'); ?>
 <style>
@@ -21,7 +21,6 @@
 .leaderboard-row:nth-child(n+6){ animation-delay: 0.6s; }
 
 .score-bar { transition: width 1.5s cubic-bezier(0.4,0,0.2,1); }
-.tab-btn.active { @apply bg-white dark:bg-gray-800 shadow-xl text-primary-600 dark:text-primary-400 font-black border-glow; }
 
 /* 3D Podium Styles */
 .podium-container {
@@ -82,6 +81,7 @@
 
 <?php $__env->startSection('content'); ?>
 <div class="max-w-6xl mx-auto px-4 sm:px-6 py-12 relative z-10" x-data="{ tab: '<?php echo e($viewer->isStartup() ? 'corporates' : 'startups'); ?>' }">
+    <?php echo $__env->make('components.back-button', ['fallback' => route('dashboard'), 'label' => 'Back to Dashboard'], \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
 
     
     <div class="text-center mb-16 reveal">
@@ -92,19 +92,19 @@
             Top <span class="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-orange-500 to-pink-500">Performers</span>
         </h1>
         <p class="text-gray-500 dark:text-gray-400 text-lg max-w-2xl mx-auto font-medium">
-            Ranked by connections, applications, shortlists, badges, and profile completeness.
-            <span class="text-primary-600 dark:text-primary-400 font-bold">Updated in real-time.</span>
+            Ranked by AI-powered analysis of engagement, profile quality, and growth potential — powered by
+            <span class="text-primary-600 dark:text-primary-400 font-bold">Gemini AI ✨</span>
         </p>
     </div>
 
     
     <div class="flex gap-2 p-1.5 bg-gray-100/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl mb-12 max-w-sm mx-auto border border-gray-200 dark:border-gray-800 reveal reveal-delay-1 shadow-inner">
-        <button @click="tab='startups'" :class="tab==='startups' ? 'active' : ''"
-            class="tab-btn flex-1 py-3 text-sm rounded-xl transition-all duration-300 font-semibold text-gray-500 hover:text-gray-900 dark:hover:text-white flex items-center justify-center gap-2">
+        <button @click="tab='startups'" :class="tab==='startups' ? 'bg-white dark:bg-gray-800 shadow-xl text-primary-600 dark:text-primary-400 font-black border-glow' : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'"
+            class="tab-btn flex-1 py-3 text-sm rounded-xl transition-all duration-300 font-semibold flex items-center justify-center gap-2">
             🚀 Startups
         </button>
-        <button @click="tab='corporates'" :class="tab==='corporates' ? 'active' : ''"
-            class="tab-btn flex-1 py-3 text-sm rounded-xl transition-all duration-300 font-semibold text-gray-500 hover:text-gray-900 dark:hover:text-white flex items-center justify-center gap-2">
+        <button @click="tab='corporates'" :class="tab==='corporates' ? 'bg-white dark:bg-gray-800 shadow-xl text-primary-600 dark:text-primary-400 font-black border-glow' : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'"
+            class="tab-btn flex-1 py-3 text-sm rounded-xl transition-all duration-300 font-semibold flex items-center justify-center gap-2">
             🏢 Corporates
         </button>
     </div>
@@ -237,6 +237,25 @@
                     <span class="text-sm font-black text-green-600 bg-green-50 dark:bg-green-900/20 py-1 rounded-lg"><?php echo e($s->lb_shortlisted); ?></span>
                     <span class="text-sm font-black text-yellow-600 bg-yellow-50 dark:bg-yellow-900/20 py-1 rounded-lg"><?php echo e($s->lb_badges); ?></span>
                 </div>
+
+                
+                <?php if(!empty($s->lb_ai_insight)): ?>
+                <div class="col-span-12 px-2 pb-1 flex items-center gap-2">
+                    <?php
+                        $potentialColor = match($s->lb_ai_potential ?? 'Medium') {
+                            'High'   => 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
+                            'Low'    => 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800',
+                            default  => 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800',
+                        };
+                    ?>
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border <?php echo e($potentialColor); ?>">
+                        ✨ AI · <?php echo e($s->lb_ai_potential ?? 'Medium'); ?>
+
+                        <?php if(($s->lb_ai_bonus ?? 0) > 0): ?><span class="ml-1 opacity-70">+<?php echo e($s->lb_ai_bonus); ?></span><?php endif; ?>
+                    </span>
+                    <span class="text-[11px] text-gray-400 dark:text-gray-500 italic truncate"><?php echo e($s->lb_ai_insight); ?></span>
+                </div>
+                <?php endif; ?>
             </a>
             <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
             <div class="py-20 text-center text-gray-500 font-bold text-lg">No startups on the leaderboard yet.</div>
@@ -365,6 +384,25 @@
                     <span class="text-sm font-black text-green-600 bg-green-50 dark:bg-green-900/20 py-1 rounded-lg"><?php echo e($c->lb_shortlisted); ?></span>
                     <span class="text-sm font-black text-yellow-600 bg-yellow-50 dark:bg-yellow-900/20 py-1 rounded-lg"><?php echo e($c->lb_badges); ?></span>
                 </div>
+
+                
+                <?php if(!empty($c->lb_ai_insight)): ?>
+                <div class="col-span-12 px-2 pb-1 flex items-center gap-2">
+                    <?php
+                        $potentialColorC = match($c->lb_ai_potential ?? 'Medium') {
+                            'High'  => 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
+                            'Low'   => 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800',
+                            default => 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800',
+                        };
+                    ?>
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border <?php echo e($potentialColorC); ?>">
+                        ✨ AI · <?php echo e($c->lb_ai_potential ?? 'Medium'); ?>
+
+                        <?php if(($c->lb_ai_bonus ?? 0) > 0): ?><span class="ml-1 opacity-70">+<?php echo e($c->lb_ai_bonus); ?></span><?php endif; ?>
+                    </span>
+                    <span class="text-[11px] text-gray-400 dark:text-gray-500 italic truncate"><?php echo e($c->lb_ai_insight); ?></span>
+                </div>
+                <?php endif; ?>
             </a>
             <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
             <div class="py-20 text-center text-gray-500 font-bold text-lg">No corporates on the leaderboard yet.</div>

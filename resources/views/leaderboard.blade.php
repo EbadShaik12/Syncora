@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@section('title', 'Leaderboard — StartupConnect')
+@section('title', 'Leaderboard — Syncora')
 
 @push('styles')
 <style>
@@ -22,7 +22,6 @@
 .leaderboard-row:nth-child(n+6){ animation-delay: 0.6s; }
 
 .score-bar { transition: width 1.5s cubic-bezier(0.4,0,0.2,1); }
-.tab-btn.active { @apply bg-white dark:bg-gray-800 shadow-xl text-primary-600 dark:text-primary-400 font-black border-glow; }
 
 /* 3D Podium Styles */
 .podium-container {
@@ -94,19 +93,19 @@
             Top <span class="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-orange-500 to-pink-500">Performers</span>
         </h1>
         <p class="text-gray-500 dark:text-gray-400 text-lg max-w-2xl mx-auto font-medium">
-            Ranked by connections, applications, shortlists, badges, and profile completeness.
-            <span class="text-primary-600 dark:text-primary-400 font-bold">Updated in real-time.</span>
+            Ranked by AI-powered analysis of engagement, profile quality, and growth potential — powered by
+            <span class="text-primary-600 dark:text-primary-400 font-bold">Gemini AI ✨</span>
         </p>
     </div>
 
     {{-- ── Tab switcher ── --}}
     <div class="flex gap-2 p-1.5 bg-gray-100/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl mb-12 max-w-sm mx-auto border border-gray-200 dark:border-gray-800 reveal reveal-delay-1 shadow-inner">
-        <button @click="tab='startups'" :class="tab==='startups' ? 'active' : ''"
-            class="tab-btn flex-1 py-3 text-sm rounded-xl transition-all duration-300 font-semibold text-gray-500 hover:text-gray-900 dark:hover:text-white flex items-center justify-center gap-2">
+        <button @click="tab='startups'" :class="tab==='startups' ? 'bg-white dark:bg-gray-800 shadow-xl text-primary-600 dark:text-primary-400 font-black border-glow' : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'"
+            class="tab-btn flex-1 py-3 text-sm rounded-xl transition-all duration-300 font-semibold flex items-center justify-center gap-2">
             🚀 Startups
         </button>
-        <button @click="tab='corporates'" :class="tab==='corporates' ? 'active' : ''"
-            class="tab-btn flex-1 py-3 text-sm rounded-xl transition-all duration-300 font-semibold text-gray-500 hover:text-gray-900 dark:hover:text-white flex items-center justify-center gap-2">
+        <button @click="tab='corporates'" :class="tab==='corporates' ? 'bg-white dark:bg-gray-800 shadow-xl text-primary-600 dark:text-primary-400 font-black border-glow' : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'"
+            class="tab-btn flex-1 py-3 text-sm rounded-xl transition-all duration-300 font-semibold flex items-center justify-center gap-2">
             🏢 Corporates
         </button>
     </div>
@@ -239,6 +238,24 @@
                     <span class="text-sm font-black text-green-600 bg-green-50 dark:bg-green-900/20 py-1 rounded-lg">{{ $s->lb_shortlisted }}</span>
                     <span class="text-sm font-black text-yellow-600 bg-yellow-50 dark:bg-yellow-900/20 py-1 rounded-lg">{{ $s->lb_badges }}</span>
                 </div>
+
+                {{-- AI Insight (full row) --}}
+                @if(!empty($s->lb_ai_insight))
+                <div class="col-span-12 px-2 pb-1 flex items-center gap-2">
+                    @php
+                        $potentialColor = match($s->lb_ai_potential ?? 'Medium') {
+                            'High'   => 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
+                            'Low'    => 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800',
+                            default  => 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800',
+                        };
+                    @endphp
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border {{ $potentialColor }}">
+                        ✨ AI · {{ $s->lb_ai_potential ?? 'Medium' }}
+                        @if(($s->lb_ai_bonus ?? 0) > 0)<span class="ml-1 opacity-70">+{{ $s->lb_ai_bonus }}</span>@endif
+                    </span>
+                    <span class="text-[11px] text-gray-400 dark:text-gray-500 italic truncate">{{ $s->lb_ai_insight }}</span>
+                </div>
+                @endif
             </a>
             @empty
             <div class="py-20 text-center text-gray-500 font-bold text-lg">No startups on the leaderboard yet.</div>
@@ -367,6 +384,24 @@
                     <span class="text-sm font-black text-green-600 bg-green-50 dark:bg-green-900/20 py-1 rounded-lg">{{ $c->lb_shortlisted }}</span>
                     <span class="text-sm font-black text-yellow-600 bg-yellow-50 dark:bg-yellow-900/20 py-1 rounded-lg">{{ $c->lb_badges }}</span>
                 </div>
+
+                {{-- AI Insight (full row) --}}
+                @if(!empty($c->lb_ai_insight))
+                <div class="col-span-12 px-2 pb-1 flex items-center gap-2">
+                    @php
+                        $potentialColorC = match($c->lb_ai_potential ?? 'Medium') {
+                            'High'  => 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
+                            'Low'   => 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800',
+                            default => 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800',
+                        };
+                    @endphp
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border {{ $potentialColorC }}">
+                        ✨ AI · {{ $c->lb_ai_potential ?? 'Medium' }}
+                        @if(($c->lb_ai_bonus ?? 0) > 0)<span class="ml-1 opacity-70">+{{ $c->lb_ai_bonus }}</span>@endif
+                    </span>
+                    <span class="text-[11px] text-gray-400 dark:text-gray-500 italic truncate">{{ $c->lb_ai_insight }}</span>
+                </div>
+                @endif
             </a>
             @empty
             <div class="py-20 text-center text-gray-500 font-bold text-lg">No corporates on the leaderboard yet.</div>

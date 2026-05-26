@@ -12,10 +12,11 @@ class StartupProfile extends Model
     use HasFactory;
 
     protected $fillable = [
-        'user_id', 'company_name', 'logo', 'industry_id', 'stage', 'team_size',
+        'user_id', 'company_name', 'logo', 'banner', 'industry_id', 'stage', 'team_size',
         'founded_year', 'elevator_pitch', 'pitch_deck', 'funding_status',
         'funding_amount', 'tech_tags', 'seeking', 'budget_min', 'budget_max',
         'website', 'linkedin', 'city', 'state', 'country',
+        'mission', 'vision', 'annual_revenue',
     ];
 
     protected $casts = [

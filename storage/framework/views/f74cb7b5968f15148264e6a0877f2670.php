@@ -1,6 +1,7 @@
 <?php $__env->startSection('title', 'Manage Users'); ?>
 <?php $__env->startSection('content'); ?>
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <?php echo $__env->make('components.back-button', ['fallback' => route('admin.dashboard'), 'label' => 'Back to Dashboard'], \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
     <h1 class="text-3xl font-bold mb-6">User Management</h1>
 
     <!-- Filters -->

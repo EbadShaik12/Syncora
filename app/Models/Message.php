@@ -10,10 +10,11 @@ class Message extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['connection_id', 'sender_id', 'content', 'read_at'];
+    protected $fillable = ['connection_id', 'sender_id', 'content', 'read_at', 'delivered_at'];
 
     protected $casts = [
         'read_at' => 'datetime',
+        'delivered_at' => 'datetime',
     ];
 
     public function connection(): BelongsTo

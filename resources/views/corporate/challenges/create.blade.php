@@ -31,7 +31,7 @@
         </div>
     @endif
 
-    <form method="POST" action="{{ route('corporate.challenges.store') }}" class="space-y-6">
+    <form method="POST" action="{{ route('corporate.challenges.store') }}" enctype="multipart/form-data" data-warn-unsaved class="space-y-6">
         @csrf
 
         <div class="glass-card-strong rounded-3xl p-8 border-glow space-y-6">
@@ -114,6 +114,31 @@
                     <p class="text-red-500 text-xs mt-1 font-bold">{{ $message }}</p>
                 @enderror
             </div>
+            <div>
+                <label class="block text-sm font-bold mb-2 text-gray-700 dark:text-gray-300 font-outfit">Reference Document / Brief <span class="text-xs text-gray-400 font-normal">(Optional, max 20MB)</span></label>
+                <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-slate-200 dark:border-zinc-800 border-dashed rounded-xl hover:border-purple-400 dark:hover:border-purple-500/50 transition duration-200 bg-slate-50/50 dark:bg-zinc-900/20">
+                    <div class="space-y-1 text-center">
+                        <svg class="mx-auto h-12 w-12 text-slate-400 dark:text-zinc-600" stroke="currentColor" fill="none" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 13h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        <div class="flex text-sm text-slate-600 dark:text-zinc-400 justify-center">
+                            <label for="attachment" class="relative cursor-pointer rounded-md font-bold text-purple-600 dark:text-purple-400 hover:text-purple-500 focus-within:outline-none">
+                                <span>Upload a file</span>
+                                <input id="attachment" name="attachment" type="file" class="sr-only" accept=".ppt,.pptx,.pdf,.doc,.docx,image/*">
+                            </label>
+                            <p class="pl-1">or drag and drop</p>
+                        </div>
+                        <p class="text-xs text-slate-500 dark:text-zinc-400 font-medium">PPT, PDF, Word, or Image up to 20MB</p>
+                        <div id="file-chosen-wrapper" class="hidden mt-3 p-2 px-3 bg-purple-50 dark:bg-purple-950/30 rounded-lg border border-purple-200/50 dark:border-purple-900/50 inline-flex items-center gap-2">
+                            <span class="text-xs font-bold text-purple-700 dark:text-purple-300" id="file-chosen-name">No file chosen</span>
+                            <button type="button" onclick="clearFile()" class="text-red-500 hover:text-red-700 font-bold text-xs p-1">×</button>
+                        </div>
+                    </div>
+                </div>
+                @error('attachment')
+                    <p class="text-red-500 text-xs mt-1 font-bold">{{ $message }}</p>
+                @enderror
+            </div>
         </div>
 
         <button type="submit" class="w-full shimmer-btn bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-4 rounded-2xl shadow-xl shadow-purple-600/25 transition-all duration-300 hover:scale-[1.01]">
@@ -121,4 +146,32 @@
         </button>
     </form>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const fileInput = document.getElementById('attachment');
+        const nameSpan = document.getElementById('file-chosen-name');
+        const wrapperDiv = document.getElementById('file-chosen-wrapper');
+
+        if (fileInput) {
+            fileInput.addEventListener('change', function() {
+                if (this.files && this.files.length > 0) {
+                    nameSpan.textContent = this.files[0].name;
+                    wrapperDiv.classList.remove('hidden');
+                } else {
+                    wrapperDiv.classList.add('hidden');
+                }
+            });
+        }
+    });
+
+    function clearFile() {
+        const fileInput = document.getElementById('attachment');
+        const wrapperDiv = document.getElementById('file-chosen-wrapper');
+        const nameSpan = document.getElementById('file-chosen-name');
+        if (fileInput) fileInput.value = '';
+        if (wrapperDiv) wrapperDiv.classList.add('hidden');
+        if (nameSpan) nameSpan.textContent = '';
+    }
+</script>
 @endsection

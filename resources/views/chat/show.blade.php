@@ -47,6 +47,27 @@
     #msg-input:focus { outline: none; }
     
     .chat-layout { height: calc(100vh - 5rem); }
+
+    /* ── WhatsApp-style tick marks ─────────────────── */
+    .tick-wrapper { display: inline-flex; align-items: center; margin-left: 2px; }
+    /* Sending (temp) – clock icon */
+    .tick-sending  { color: #9ca3af; }
+    /* Sent – single gray tick */
+    .tick-sent     { color: #9ca3af; }
+    /* Read – double blue ticks */
+    .tick-read     { color: #53bdeb; }
+    @keyframes tickPop {
+        from { transform: scale(0.6); opacity: 0; }
+        to   { transform: scale(1);   opacity: 1; }
+    }
+    .tick-read svg { animation: tickPop 0.25s ease; }
+
+    /* ── Online dot pulse ─────────────────── */
+    @keyframes onlinePulse {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(34,197,94,0.5); }
+        50%       { box-shadow: 0 0 0 5px rgba(34,197,94,0); }
+    }
+    .online-dot { animation: onlinePulse 2s ease-in-out infinite; }
 </style>
 @endpush
 
@@ -129,15 +150,14 @@
 
                 <div class="relative">
                     <img src="{{ $other->logoUrl() }}" alt="" class="w-12 h-12 rounded-2xl object-cover ring-2 ring-white dark:ring-gray-900 shadow-md bg-white">
-                    <span class="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full ring-2 ring-white dark:ring-gray-900 shadow-sm border border-green-400"></span>
+                    {{-- Online dot: green pulse if online, gray if offline --}}
+                    <span class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full ring-2 ring-white dark:ring-gray-900 shadow-sm border transition-colors"
+                          :class="isOnline ? 'bg-green-500 border-green-400 online-dot' : 'bg-gray-300 dark:bg-gray-600 border-gray-200'"></span>
                 </div>
 
                 <div class="flex-1 min-w-0">
                     <p class="font-black text-lg truncate text-gray-900 dark:text-white font-outfit">{{ $other->companyName() }}</p>
-                    <p class="text-xs font-bold text-gray-500 uppercase tracking-widest truncate mt-0.5" x-show="!isTyping">
-                        {{ $other->profile()?->industry?->name ?? ($other->isStartup() ? 'Startup' : 'Corporate') }}
-                        @if($other->profile()?->city) <span class="mx-1">·</span> {{ $other->profile()->city }} @endif
-                    </p>
+                    {{-- Typing indicator takes priority, then online/last-seen, then industry --}}
                     <p class="text-xs font-black text-transparent bg-clip-text bg-gradient-to-r from-primary-500 to-purple-500 flex items-center gap-1.5 mt-0.5" x-show="isTyping" x-cloak>
                         <span class="uppercase tracking-widest">Typing</span>
                         <span class="inline-flex gap-0.5 items-end">
@@ -145,6 +165,11 @@
                             <span class="typing-dot w-1 h-1 bg-primary-500 rounded-full inline-block"></span>
                             <span class="typing-dot w-1 h-1 bg-primary-500 rounded-full inline-block"></span>
                         </span>
+                    </p>
+                    <p class="text-xs font-bold tracking-wide truncate mt-0.5" x-show="!isTyping">
+                        <span x-show="isOnline" class="text-green-500 font-bold uppercase tracking-widest text-[10px]">● Online</span>
+                        <span x-show="!isOnline && lastSeenLabel" x-text="lastSeenLabel" class="text-gray-400 font-medium"></span>
+                        <span x-show="!isOnline && !lastSeenLabel" class="text-gray-400 font-medium uppercase tracking-widest text-[10px]">Offline</span>
                     </p>
                 </div>
 
@@ -304,15 +329,39 @@
                                 <div :class="msg.is_mine
                                     ? 'bg-gradient-to-br from-primary-600 to-purple-600 text-white rounded-t-2xl rounded-bl-2xl rounded-br-sm shadow-md shadow-primary-500/20'
                                     : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-t-2xl rounded-br-2xl rounded-bl-sm shadow-md border border-gray-100 dark:border-gray-700/50'"
-                                    class="px-5 py-3">
+                                    class="px-5 py-3 cursor-pointer select-none hover:brightness-105 active:scale-[0.99] transition-all"
+                                    @dblclick="activeInfoMsg = msg"
+                                    title="Double-click to see message details">
                                     <p class="text-[15px] font-medium leading-relaxed whitespace-pre-wrap break-words" x-text="msg.content"></p>
                                 </div>
                                 <div :class="msg.is_mine ? 'justify-end' : 'justify-start'" class="flex items-center gap-1.5 mt-1 px-1">
-                                    <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider" x-text="msg.created_at"></span>
+                                    <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider cursor-pointer" @dblclick="activeInfoMsg = msg" x-text="msg.created_at"></span>
                                     <template x-if="msg.is_mine">
-                                        <span>
-                                            <svg x-show="msg.read_at" class="w-3.5 h-3.5 text-primary-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
-                                            <svg x-show="!msg.read_at" class="w-3.5 h-3.5 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                                        <span class="tick-wrapper cursor-pointer" @dblclick="activeInfoMsg = msg">
+                                            {{-- Sending: clock icon (temp message) --}}
+                                            <template x-if="String(msg.id).startsWith('temp-')">
+                                                <svg class="w-3 h-3 tick-sending" title="Sending..." fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                            </template>
+                                            {{-- Read: double blue ticks --}}
+                                            <template x-if="!String(msg.id).startsWith('temp-') && msg.read_at">
+                                                <svg class="tick-read" :title="'Sent: ' + msg.created_at + '\nDelivered: ' + msg.delivered_at + '\nRead: ' + msg.read_at" width="18" height="11" viewBox="0 0 18 11" fill="none">
+                                                    <path d="M1 5.5L5 9.5L13 1.5" stroke="#53bdeb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                    <path d="M5 5.5L9 9.5L17 1.5" stroke="#53bdeb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                </svg>
+                                            </template>
+                                            {{-- Delivered: double gray ticks --}}
+                                            <template x-if="!String(msg.id).startsWith('temp-') && !msg.read_at && msg.delivered_at">
+                                                <svg class="tick-delivered" :title="'Sent: ' + msg.created_at + '\nDelivered: ' + msg.delivered_at + '\nUnread'" width="18" height="11" viewBox="0 0 18 11" fill="none">
+                                                    <path d="M1 5.5L5 9.5L13 1.5" stroke="#9ca3af" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                    <path d="M5 5.5L9 9.5L17 1.5" stroke="#9ca3af" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                </svg>
+                                            </template>
+                                            {{-- Sent: single gray tick --}}
+                                            <template x-if="!String(msg.id).startsWith('temp-') && !msg.read_at && !msg.delivered_at">
+                                                <svg class="tick-sent" :title="'Sent: ' + msg.created_at + '\nPending delivery'" width="12" height="11" viewBox="0 0 12 11" fill="none">
+                                                    <path d="M1 5.5L4.5 9L11 1" stroke="#9ca3af" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                </svg>
+                                            </template>
                                         </span>
                                     </template>
                                 </div>
@@ -394,6 +443,85 @@
                 </div>
             </div>
         </div>
+
+        {{-- ══════════════ MESSAGE INFO MODAL ══════════════ --}}
+        <div x-show="activeInfoMsg" 
+             x-cloak 
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0 scale-95"
+             x-transition:enter-end="opacity-100 scale-100"
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="opacity-100 scale-100"
+             x-transition:leave-end="opacity-0 scale-95"
+             class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+             @click.self="activeInfoMsg = null">
+            
+            <div class="bg-white dark:bg-gray-800 rounded-3xl w-full max-w-md overflow-hidden border border-gray-100 dark:border-gray-700 shadow-2xl">
+                {{-- Modal header --}}
+                <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/30 flex justify-between items-center">
+                    <h3 class="font-black text-lg text-gray-900 dark:text-white font-outfit">Message Info</h3>
+                    <button @click="activeInfoMsg = null" class="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                        <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+                
+                {{-- Modal content --}}
+                <div class="p-6 space-y-6">
+                    {{-- Message Preview --}}
+                    <div>
+                        <span class="text-[10px] font-black text-primary-500 uppercase tracking-widest block mb-2">Message Content</span>
+                        <div class="p-4 rounded-2xl bg-gray-50 dark:bg-gray-900/50 border border-gray-105 dark:border-gray-800 text-sm font-medium text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words leading-relaxed max-h-32 overflow-y-auto" x-text="activeInfoMsg?.content"></div>
+                    </div>
+                    
+                    {{-- Status timelines --}}
+                    <div class="space-y-4 relative before:absolute before:left-3 before:top-2 before:bottom-2 before:w-0.5 before:bg-gray-200 dark:before:bg-gray-700">
+                        {{-- Sent --}}
+                        <div class="flex items-start gap-4 relative">
+                            <div class="w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center border-4 border-white dark:border-gray-800 z-10">
+                                <svg class="w-3 h-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-wider">Sent</p>
+                                <p class="text-[10px] text-gray-400 font-bold" x-text="activeInfoMsg ? activeInfoMsg.created_at : ''"></p>
+                            </div>
+                        </div>
+                        
+                        {{-- Delivered --}}
+                        <div class="flex items-start gap-4 relative">
+                            <div class="w-6 h-6 rounded-full flex items-center justify-center border-4 border-white dark:border-gray-800 z-10"
+                                 :class="activeInfoMsg?.delivered_at ? 'bg-gray-200 dark:bg-gray-600' : 'bg-gray-50 dark:bg-gray-900'">
+                                <svg class="w-3 h-3" :class="activeInfoMsg?.delivered_at ? 'text-gray-600 dark:text-gray-300' : 'text-gray-300 dark:text-gray-700'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7m-5-5l5 5L19 7"/>
+                                </svg>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-xs font-bold uppercase tracking-wider" :class="activeInfoMsg?.delivered_at ? 'text-gray-900 dark:text-white' : 'text-gray-400'">Delivered</p>
+                                <p class="text-[10px] font-bold" :class="activeInfoMsg?.delivered_at ? 'text-gray-400' : 'text-gray-300 dark:text-gray-700'" x-text="activeInfoMsg?.delivered_at ? activeInfoMsg.delivered_at : 'Pending'"></p>
+                            </div>
+                        </div>
+                        
+                        {{-- Read --}}
+                        <div class="flex items-start gap-4 relative">
+                            <div class="w-6 h-6 rounded-full flex items-center justify-center border-4 border-white dark:border-gray-800 z-10"
+                                 :class="activeInfoMsg?.read_at ? 'bg-primary-100 dark:bg-primary-950/40' : 'bg-gray-50 dark:bg-gray-900'">
+                                <svg class="w-3 h-3" :class="activeInfoMsg?.read_at ? 'text-primary-500' : 'text-gray-300 dark:text-gray-700'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7m-5-5l5 5L19 7"/>
+                                </svg>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-xs font-bold uppercase tracking-wider" :class="activeInfoMsg?.read_at ? 'text-primary-500' : 'text-gray-400'">Read</p>
+                                <p class="text-[10px] font-bold" :class="activeInfoMsg?.read_at ? 'text-gray-400' : 'text-gray-300 dark:text-gray-700'" x-text="activeInfoMsg?.read_at ? activeInfoMsg.read_at : 'Pending'"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                {{-- Modal footer --}}
+                <div class="px-6 py-4 bg-gray-50/50 dark:bg-gray-900/30 border-t border-gray-100 dark:border-gray-700 flex justify-end">
+                    <button @click="activeInfoMsg = null" class="px-5 py-2 text-xs font-bold bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-650 transition uppercase tracking-wider">Close</button>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -407,6 +535,7 @@ $messagesJson = $messages->map(function($m) {
         'date_label' => $m->created_at->isToday() ? 'Today' : ($m->created_at->isYesterday() ? 'Yesterday' : $m->created_at->format('M d, Y')),
         'is_mine'    => $m->sender_id === auth()->id(),
         'read_at'    => $m->read_at ? $m->read_at->format('h:i A') : null,
+        'delivered_at' => $m->delivered_at ? $m->delivered_at->format('h:i A') : null,
     ];
 })->values()->toArray();
 @endphp
@@ -418,6 +547,9 @@ function chatApp() {
         newMessage:    '',
         lastId:        {{ $messages->last()?->id ?? 0 }},
         isTyping:      false,
+        isOnline:      false,
+        lastSeenLabel: null,
+        activeInfoMsg: null,
         showEmoji:     false,
         sending:       false,
         sidebarSearch: '',
@@ -426,6 +558,8 @@ function chatApp() {
         fetchUrl:      '{{ route("chat.fetch", $connection) }}',
         typingSetUrl:  '{{ route("chat.typing", $connection) }}',
         typingGetUrl:  '{{ route("chat.typing.get", $connection) }}',
+        pingUrl:       '{{ route("chat.ping") }}',
+        onlineUrl:     '{{ route("chat.online", $connection) }}',
         csrfToken:     document.querySelector('meta[name="csrf-token"]').content,
 
         emojis: ['😊','😂','🎉','👍','🔥','💡','🚀','💼','🤝','✅','❤️','⭐','🎯','💪','🙏',
@@ -435,6 +569,9 @@ function chatApp() {
             this.scrollDown();
             this.startPolling();
             this.pollTyping();
+            this.pingOnline();          // announce self as online
+            this.pollOnlineStatus();    // check other user's status
+            setInterval(() => this.pingOnline(), 30000); // keep alive every 30s
         },
 
         scrollDown(smooth = false) {
@@ -515,11 +652,19 @@ function chatApp() {
                         this.scrollDown(true);
                     }
 
-                    // Update read receipts
+                    // Update read and delivered receipts
                     if (data.last_read_sent_id) {
                         this.messages.forEach(m => {
-                            if (m.is_mine && m.id <= data.last_read_sent_id && !m.read_at) {
-                                m.read_at = '✓';
+                            if (m.is_mine && m.id <= data.last_read_sent_id) {
+                                if (!m.read_at) m.read_at = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                                if (!m.delivered_at) m.delivered_at = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                            }
+                        });
+                    }
+                    if (data.last_delivered_sent_id) {
+                        this.messages.forEach(m => {
+                            if (m.is_mine && m.id <= data.last_delivered_sent_id && !m.delivered_at) {
+                                m.delivered_at = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                             }
                         });
                     }
@@ -535,6 +680,46 @@ function chatApp() {
                     this.isTyping = data.typing;
                 } catch (e) {}
             }, 2000);
+        },
+
+        async pingOnline() {
+            try {
+                await fetch(this.pingUrl, {
+                    method:  'POST',
+                    headers: { 'X-CSRF-TOKEN': this.csrfToken, 'Content-Type': 'application/json' },
+                    body:    JSON.stringify({}),
+                });
+            } catch (e) {}
+        },
+
+        async pollOnlineStatus() {
+            const check = async () => {
+                try {
+                    const res  = await fetch(this.onlineUrl);
+                    const data = await res.json();
+                    this.isOnline      = data.online;
+                    this.lastSeenLabel = data.last_seen;
+
+                    // Update read and delivered receipts
+                    if (data.last_read_sent_id) {
+                        this.messages.forEach(m => {
+                            if (m.is_mine && m.id <= data.last_read_sent_id) {
+                                if (!m.read_at) m.read_at = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                                if (!m.delivered_at) m.delivered_at = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                            }
+                        });
+                    }
+                    if (data.last_delivered_sent_id) {
+                        this.messages.forEach(m => {
+                            if (m.is_mine && m.id <= data.last_delivered_sent_id && !m.delivered_at) {
+                                m.delivered_at = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                            }
+                        });
+                    }
+                } catch (e) {}
+            };
+            await check();
+            setInterval(check, 10000); // refresh every 10 seconds
         },
 
         addEmoji(e) {

@@ -46,8 +46,13 @@
                 Back to roles
             </a>
             
-            <div class="inline-flex w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-600 items-center justify-center text-white mb-6 shadow-xl shadow-purple-500/30">
-                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+            <div class="inline-flex mb-6">
+                <div class="bg-white rounded-2xl p-4 shadow-xl border border-slate-200/40 dark:border-white/10 flex items-center justify-center gap-3">
+                    <div class="w-12 h-12 rounded-full overflow-hidden relative bg-white flex items-center justify-center shadow-sm border border-slate-100 flex-shrink-0">
+                        <img src="{{ asset('images/logo.png') }}" class="w-full h-full object-cover scale-[1.7] -translate-y-[15%] flex-shrink-0" alt="Syncora Icon">
+                    </div>
+                    <img src="{{ asset('images/logo-text.png') }}" class="h-8 w-auto object-contain dark:invert transition-all duration-300" alt="Syncora Text">
+                </div>
             </div>
             
             <h2 class="text-4xl font-black mb-4 font-outfit">Corporate <span class="text-gradient from-purple-400 to-pink-600">Application</span></h2>

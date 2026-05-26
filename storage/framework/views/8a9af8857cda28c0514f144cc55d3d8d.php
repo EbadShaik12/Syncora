@@ -46,7 +46,7 @@
     <div class="hidden lg:flex lg:w-1/2 flex-col items-center justify-center relative z-10 p-12 border-r border-gray-200/20 dark:border-white/5 bg-white/20 dark:bg-gray-900/40 backdrop-blur-3xl">
         
         <div class="w-full max-w-lg text-center stagger-container">
-            <h2 class="reveal reveal-delay-1 text-4xl font-black mb-4 leading-tight font-outfit text-gray-900 dark:text-white">Welcome Back to<br><span class="text-gradient">StartupConnect</span></h2>
+            <h2 class="reveal reveal-delay-1 text-4xl font-black mb-4 leading-tight font-outfit text-gray-900 dark:text-white">Welcome Back to<br><span class="text-gradient">Syncora</span></h2>
             <p class="reveal reveal-delay-2 text-gray-600 dark:text-gray-300 text-sm leading-relaxed mb-12 font-medium">Log in to access your dashboard, discover new partners, and manage your innovation pipeline.</p>
             
             
@@ -95,9 +95,12 @@
         <div class="w-full max-w-md relative stagger-container">
             
             <div class="reveal text-center mb-8 lg:mb-10">
-                <a href="<?php echo e(route('home')); ?>" class="inline-flex items-center gap-2 mb-6 magnetic">
-                    <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary-500 to-purple-600 flex items-center justify-center text-white shadow-xl shadow-primary-500/30">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                <a href="<?php echo e(route('home')); ?>" class="inline-flex items-center gap-3 mb-6 magnetic">
+                    <div class="bg-white rounded-2xl p-4 shadow-xl border border-slate-200/40 dark:border-white/10 flex items-center justify-center gap-3">
+                        <div class="w-12 h-12 rounded-full overflow-hidden relative bg-white flex items-center justify-center shadow-sm border border-slate-100 flex-shrink-0">
+                            <img src="<?php echo e(asset('images/logo.png')); ?>" class="w-full h-full object-cover scale-[1.7] -translate-y-[15%] flex-shrink-0" alt="Syncora Icon">
+                        </div>
+                        <img src="<?php echo e(asset('images/logo-text.png')); ?>" class="h-8 w-auto object-contain dark:invert transition-all duration-300" alt="Syncora Text">
                     </div>
                 </a>
                 <h2 class="text-3xl font-black font-outfit">Sign In</h2>

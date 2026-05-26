@@ -10,6 +10,10 @@ use App\Http\Controllers\Corporate\CorporateProfileController;
 use App\Http\Controllers\Corporate\ChallengeController;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminUserController;
+use App\Http\Controllers\Admin\AdminIndustryController;
+use App\Http\Controllers\Admin\AdminBadgeController;
+use App\Http\Controllers\Admin\AdminModerationController;
+use App\Http\Controllers\Admin\AdminReportsController;
 use App\Http\Controllers\SwipeController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\ChatController;
@@ -60,6 +64,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/chat/{connection}/messages', [ChatController::class, 'fetchMessages'])->name('chat.fetch');
     Route::post('/chat/{connection}/typing', [ChatController::class, 'setTyping'])->name('chat.typing');
     Route::get('/chat/{connection}/typing', [ChatController::class, 'getTyping'])->name('chat.typing.get');
+    Route::post('/chat/ping-online', [ChatController::class, 'pingOnline'])->name('chat.ping');
+    Route::get('/chat/{connection}/online-status', [ChatController::class, 'getOnlineStatus'])->name('chat.online');
 
     // Notifications
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
@@ -112,5 +118,28 @@ Route::middleware('auth')->group(function () {
         Route::post('/users/{user}/toggle-suspend', [AdminUserController::class, 'toggleSuspend'])->name('users.toggleSuspend');
         Route::delete('/users/{user}', [AdminUserController::class, 'destroy'])->name('users.destroy');
         Route::get('/analytics', [AdminDashboardController::class, 'analytics'])->name('analytics');
+
+        // Industry & Tag Management
+        Route::get('/industries', [AdminIndustryController::class, 'index'])->name('industries.index');
+        Route::post('/industries', [AdminIndustryController::class, 'store'])->name('industries.store');
+        Route::put('/industries/{industry}', [AdminIndustryController::class, 'update'])->name('industries.update');
+        Route::delete('/industries/{industry}', [AdminIndustryController::class, 'destroy'])->name('industries.destroy');
+
+        // Badges & Gamification
+        Route::get('/badges', [AdminBadgeController::class, 'index'])->name('badges.index');
+        Route::post('/badges', [AdminBadgeController::class, 'store'])->name('badges.store');
+        Route::post('/badges/{badge}/award', [AdminBadgeController::class, 'award'])->name('badges.award');
+        Route::post('/badges/{badge}/revoke', [AdminBadgeController::class, 'revoke'])->name('badges.revoke');
+        Route::delete('/badges/{badge}', [AdminBadgeController::class, 'destroy'])->name('badges.destroy');
+
+        // Content Moderation
+        Route::get('/moderation', [AdminModerationController::class, 'index'])->name('moderation.index');
+        Route::post('/moderation/{flag}/review', [AdminModerationController::class, 'review'])->name('moderation.review');
+        Route::post('/moderation/{flag}/ban', [AdminModerationController::class, 'banUser'])->name('moderation.ban');
+
+        // Reports & Exports
+        Route::get('/reports', [AdminReportsController::class, 'index'])->name('reports.index');
+        Route::get('/reports/export-users', [AdminReportsController::class, 'exportUsers'])->name('reports.export.users');
+        Route::get('/reports/export-connections', [AdminReportsController::class, 'exportConnections'])->name('reports.export.connections');
     });
 });

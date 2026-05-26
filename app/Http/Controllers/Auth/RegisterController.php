@@ -46,7 +46,7 @@ class RegisterController extends Controller
                 'email'    => $validated['email'],
                 'password' => Hash::make($validated['password']),
                 'role'     => 'startup',
-                'status'   => 'approved',
+                'status'   => 'pending',
             ]);
 
             StartupProfile::create([
@@ -58,10 +58,10 @@ class RegisterController extends Controller
                 'city'           => $validated['city'],
             ]);
 
-            Auth::login($user);
+            // Do NOT log in — account needs admin approval first
         });
 
-        return redirect()->route('dashboard')->with('success', 'Registration successful! Welcome to StartupConnect.');
+        return redirect()->route('login')->with('success', '🎉 Account created! Your application is under review. We\'ll notify you once approved.');
     }
 
     public function showCorporateForm()
@@ -89,7 +89,7 @@ class RegisterController extends Controller
                 'email'    => $validated['email'],
                 'password' => Hash::make($validated['password']),
                 'role'     => 'corporate',
-                'status'   => 'approved',
+                'status'   => 'pending',
             ]);
 
             CorporateProfile::create([
@@ -101,10 +101,10 @@ class RegisterController extends Controller
                 'city'              => $validated['city'],
             ]);
 
-            Auth::login($user);
+            // Do NOT log in — account needs admin approval first
         });
 
-        return redirect()->route('dashboard')->with('success', 'Registration successful! Welcome to StartupConnect.');
+        return redirect()->route('login')->with('success', '🎉 Account created! Your application is under review. We\'ll notify you once approved.');
     }
 
     // ── Admin registration ───────────────────────────────────────────────────

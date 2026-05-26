@@ -5,7 +5,7 @@
     @include('components.back-button', ['fallback' => route('corporate.dashboard'), 'label' => 'Back to Dashboard'])
     <h1 class="text-3xl font-bold mb-6">Your Corporate Profile</h1>
 
-    <form method="POST" action="{{ route('corporate.profile.update') }}" enctype="multipart/form-data" class="space-y-6">
+    <form method="POST" action="{{ route('corporate.profile.update') }}" enctype="multipart/form-data" data-warn-unsaved class="space-y-6">
         @csrf @method('PUT')
 
         <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6">
@@ -14,8 +14,31 @@
                 <div class="md:col-span-2">
                     <label class="block text-sm font-medium mb-2">Logo</label>
                     <div class="flex items-center gap-4">
-                        <img src="{{ $profile->logo ? asset('storage/'.$profile->logo) : auth()->user()->logoUrl() }}" class="w-20 h-20 rounded-2xl object-cover bg-gray-100">
-                        <input type="file" name="logo" accept="image/*" class="block text-sm">
+                        <img src="{{ $profile->logo ? asset('storage/'.$profile->logo) : auth()->user()->logoUrl() }}" class="w-20 h-20 rounded-2xl object-cover bg-gray-105 border border-slate-250 dark:border-zinc-700 shadow-inner">
+                        <div class="flex flex-col gap-1">
+                            <input type="file" name="logo" accept="image/*" class="block text-sm text-slate-500 dark:text-zinc-400">
+                            <p class="text-[10px] text-gray-450 dark:text-zinc-500 font-bold mt-1">Recommended: Square PNG/JPEG up to 10MB</p>
+                            @error('logo')<p class="text-red-500 text-xs font-bold mt-1">{{ $message }}</p>@enderror
+                        </div>
+                    </div>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium mb-2">Profile Cover Banner</label>
+                    <div class="flex flex-col gap-3">
+                        @if($profile->banner)
+                            <div class="relative w-full h-32 rounded-2xl overflow-hidden border border-slate-200 dark:border-zinc-700 shadow-inner">
+                                <img src="{{ asset('storage/'.$profile->banner) }}" class="w-full h-full object-cover">
+                            </div>
+                        @else
+                            <div class="w-full h-32 rounded-2xl bg-gradient-to-r from-primary-500 to-pink-500 flex items-center justify-center text-white text-xs font-bold shadow-inner opacity-80">
+                                Default Cover Gradient Active
+                            </div>
+                        @endif
+                        <div class="flex flex-col gap-1">
+                            <input type="file" name="banner" accept="image/*" class="block text-sm text-slate-500 dark:text-zinc-400">
+                            <p class="text-[10px] text-gray-455 dark:text-zinc-500 font-bold mt-1">Recommended: Landscape banner up to 15MB</p>
+                            @error('banner')<p class="text-red-500 text-xs font-bold mt-1">{{ $message }}</p>@enderror
+                        </div>
                     </div>
                 </div>
                 <div>
@@ -41,6 +64,25 @@
                 <div class="md:col-span-2">
                     <label class="block text-sm font-medium mb-2">Problem Statement <span class="text-xs text-gray-400">(What you're looking for)</span></label>
                     <textarea name="problem_statement" rows="4" required class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 focus:border-primary-500 outline-none">{{ old('problem_statement', $profile->problem_statement) }}</textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mission, Vision & Venture Fund -->
+        <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6">
+            <h2 class="font-bold text-lg mb-5">Mission, Vision &amp; Venture Allocation</h2>
+            <div class="grid md:grid-cols-2 gap-4">
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium mb-2">Our Mission <span class="text-xs text-gray-400">(Shows on profile timeline)</span></label>
+                    <textarea name="mission" rows="2" placeholder="e.g. To identify, accelerate, and scale innovative solutions through corporate backing." class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 focus:border-primary-500 outline-none">{{ old('mission', $profile->mission) }}</textarea>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium mb-2">Our Vision <span class="text-xs text-gray-400">(Shows on profile timeline)</span></label>
+                    <textarea name="vision" rows="2" placeholder="e.g. To establish the benchmark for corporate innovation and digital partnership." class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 focus:border-primary-500 outline-none">{{ old('vision', $profile->vision) }}</textarea>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium mb-2">Venture Allocation / Strategic Pipeline Fund <span class="text-xs text-gray-400">(Shows as current year metric in timeline)</span></label>
+                    <input type="text" name="annual_revenue" value="{{ old('annual_revenue', $profile->annual_revenue) }}" placeholder="e.g. Pipeline: Active Match or Sandbox Pilots: 5+ Coordinated" class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 focus:border-primary-500 outline-none">
                 </div>
             </div>
         </div>

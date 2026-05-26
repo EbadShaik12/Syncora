@@ -10,7 +10,7 @@ class InterestSignal extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['sender_id', 'receiver_id', 'status'];
+    protected $fillable = ['sender_id', 'receiver_id', 'challenge_id', 'status'];
 
     public function sender(): BelongsTo
     {
@@ -20,5 +20,10 @@ class InterestSignal extends Model
     public function receiver(): BelongsTo
     {
         return $this->belongsTo(User::class, 'receiver_id');
+    }
+
+    public function challenge(): BelongsTo
+    {
+        return $this->belongsTo(Challenge::class);
     }
 }

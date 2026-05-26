@@ -8,9 +8,16 @@ use App\Models\CorporateProfile;
 
 class CompatibilityScoreService
 {
+    private GeminiAIService $gemini;
+
+    public function __construct(GeminiAIService $gemini)
+    {
+        $this->gemini = $gemini;
+    }
+
     /**
      * Calculate compatibility score between a startup and corporate user.
-     * Returns weighted score 0-100.
+     * Blends rule-based scoring with Gemini AI analysis for 0-100 score.
      */
     public function calculate(User $startup, User $corporate): array
     {
@@ -32,23 +39,73 @@ class CompatibilityScoreService
         $budgetScore = $this->scoreBudget($sp, $cp);              // 10
         $locationScore = $this->scoreLocation($sp, $cp);          // 10
 
-        $total = $industryScore + $techScore + $partnershipScore + $stageScore + $budgetScore + $locationScore;
-        $total = round($total);
+        $ruleScore = $industryScore + $techScore + $partnershipScore + $stageScore + $budgetScore + $locationScore;
+        $ruleScore = (int) round($ruleScore);
+
+        // ── Call Gemini AI for qualitative analysis ───────────────────────
+        $startupData = [
+            'name'           => $sp->company_name,
+            'industry'       => $sp->industry?->name ?? 'Unknown',
+            'stage'          => $sp->stage ?? 'Unknown',
+            'tech_tags'      => $sp->tech_tags ?? [],
+            'seeking'        => $sp->seeking ?? [],
+            'pitch'          => $sp->elevator_pitch ?? 'Not provided',
+            'city'           => $sp->city ?? 'Unknown',
+            'team_size'      => $sp->team_size ?? 'Unknown',
+            'funding_status' => $sp->funding_status ?? 'Unknown',
+        ];
+
+        $corporateData = [
+            'name'              => $cp->company_name,
+            'industry'          => $cp->industry?->name ?? 'Unknown',
+            'size'              => $cp->company_size ?? 'Unknown',
+            'seeking_tech'      => $cp->seeking_technologies ?? [],
+            'partnership_types' => $cp->partnership_types ?? [],
+            'city'              => $cp->city ?? 'Unknown',
+        ];
+
+        $ai = $this->gemini->analyzeCompatibility($startupData, $corporateData);
+
+        // Blend: 60% rule-based + 40% AI score (both normalised 0-100)
+        $aiScore   = $ai['ai_score'] ?? $ruleScore;
+        $blended   = (int) round(($ruleScore * 0.6) + ($aiScore * 0.4));
+        $total     = min(100, max(0, $blended));
+
+        // Keep legacy analyst fields for backward compat but prefer AI data
+        $roiMultiplier = $total >= 75 ? '3.8x' : ($total >= 50 ? '2.4x' : '1.6x');
+        $roiPeriod     = $total >= 75 ? '18 months' : '12 months';
+        $successPercentage = min(98, round($total * 0.8 + 20));
+        $matchConfidence   = min(95, round($total * 0.9 + 5));
 
         return [
-            'score' => $total,
+            'score'   => $total,
             'breakdown' => [
-                'industry' => ['score' => $industryScore, 'max' => 25, 'label' => 'Industry Match'],
-                'technology' => ['score' => $techScore, 'max' => 20, 'label' => 'Tech Overlap'],
+                'industry'    => ['score' => $industryScore,    'max' => 25, 'label' => 'Industry Match'],
+                'technology'  => ['score' => $techScore,        'max' => 20, 'label' => 'Tech Overlap'],
                 'partnership' => ['score' => $partnershipScore, 'max' => 20, 'label' => 'Partnership Type'],
-                'stage' => ['score' => $stageScore, 'max' => 15, 'label' => 'Stage Fit'],
-                'budget' => ['score' => $budgetScore, 'max' => 10, 'label' => 'Budget Range'],
-                'location' => ['score' => $locationScore, 'max' => 10, 'label' => 'Location'],
+                'stage'       => ['score' => $stageScore,       'max' => 15, 'label' => 'Stage Fit'],
+                'budget'      => ['score' => $budgetScore,      'max' => 10, 'label' => 'Budget Range'],
+                'location'    => ['score' => $locationScore,    'max' => 10, 'label' => 'Location'],
             ],
-            'label' => $this->getLabel($total),
+            'label' => $ai['ai_label']  ?? $this->getLabel($total),
             'color' => $this->getColor($total),
+            'analyst' => [
+                'success_prob_percentage' => $successPercentage,
+                'confidence'              => $matchConfidence,
+                'roi'                     => $roiMultiplier . ' over ' . $roiPeriod,
+                'revenue_impact'          => ($total >= 75 ? '₹1.8 Cr' : ($total >= 50 ? '₹75L' : '₹30L')) . ' Projected ARR Contribution',
+                // AI-powered fields
+                'summary'         => $ai['ai_summary']        ?? 'Analysis pending.',
+                'recommendation'  => $ai['ai_recommendation'] ?? 'Complete your profile for a better match.',
+                'risk_analysis'   => !empty($ai['ai_risks'])  ? implode('. ', $ai['ai_risks']) : 'No specific risks identified.',
+                'strengths'       => $ai['ai_strengths']      ?? [],
+                'roi_estimate'    => $ai['ai_roi_estimate']   ?? 'N/A',
+                'ai_score'        => $ai['ai_score']          ?? 0,
+                'rule_score'      => $ruleScore,
+            ],
         ];
     }
+
 
     private function scoreIndustry(StartupProfile $sp, CorporateProfile $cp): float
     {

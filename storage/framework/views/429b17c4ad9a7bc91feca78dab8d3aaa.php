@@ -1,0 +1,737 @@
+<?php $__env->startSection('title', 'Chat with ' . $other->companyName()); ?>
+
+<?php $__env->startPush('styles'); ?>
+<style>
+    /* Scrollbar */
+    #messages-container::-webkit-scrollbar { width: 6px; }
+    #messages-container::-webkit-scrollbar-thumb { background: rgba(168,85,247,0.3); border-radius: 10px; }
+    #messages-container:hover::-webkit-scrollbar-thumb { background: rgba(168,85,247,0.6); }
+
+    /* Typing dots */
+    .typing-dot { animation: typingBounce 1.2s infinite; }
+    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes typingBounce {
+        0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+        30% { transform: translateY(-5px); opacity: 1; }
+    }
+
+    /* Message bubble entrance */
+    .msg-bubble { animation: msgPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); transform-origin: bottom center; }
+    @keyframes msgPop {
+        from { transform: scale(0.9) translateY(10px); opacity: 0; }
+        to   { transform: scale(1) translateY(0); opacity: 1; }
+    }
+
+    /* Date separator */
+    .date-separator {
+        display: flex; align-items: center; gap: 12px;
+        margin: 24px 0; color: #9ca3af; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em;
+    }
+    .date-separator::before, .date-separator::after {
+        content: ''; flex: 1; height: 1px; background: currentColor; opacity: 0.2;
+    }
+
+    /* Emoji picker */
+    .emoji-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; }
+    .emoji-btn { font-size: 1.5rem; cursor: pointer; padding: 6px; border-radius: 10px; transition: all 0.2s; text-align: center; }
+    .emoji-btn:hover { background: rgba(168,85,247,0.15); transform: scale(1.1); }
+
+    /* Sidebar hover */
+    .conv-item { transition: all 0.2s ease; border-left: 3px solid transparent; }
+    .conv-item.active { background: linear-gradient(90deg, rgba(168,85,247,0.1) 0%, transparent 100%); border-left: 3px solid #a855f7; }
+    .conv-item:hover:not(.active) { background: rgba(168,85,247,0.05); }
+
+    /* Input focus ring */
+    #msg-input:focus { outline: none; }
+    
+    .chat-layout { height: calc(100vh - 5rem); }
+
+    /* ── WhatsApp-style tick marks ─────────────────── */
+    .tick-wrapper { display: inline-flex; align-items: center; margin-left: 2px; }
+    /* Sending (temp) – clock icon */
+    .tick-sending  { color: #9ca3af; }
+    /* Sent – single gray tick */
+    .tick-sent     { color: #9ca3af; }
+    /* Read – double blue ticks */
+    .tick-read     { color: #53bdeb; }
+    @keyframes tickPop {
+        from { transform: scale(0.6); opacity: 0; }
+        to   { transform: scale(1);   opacity: 1; }
+    }
+    .tick-read svg { animation: tickPop 0.25s ease; }
+
+    /* ── Online dot pulse ─────────────────── */
+    @keyframes onlinePulse {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(34,197,94,0.5); }
+        50%       { box-shadow: 0 0 0 5px rgba(34,197,94,0); }
+    }
+    .online-dot { animation: onlinePulse 2s ease-in-out infinite; }
+</style>
+<?php $__env->stopPush(); ?>
+
+<?php $__env->startSection('content'); ?>
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 chat-layout relative z-10">
+    <div class="flex h-full glass-card-strong rounded-3xl overflow-hidden border-glow shadow-2xl" x-data="chatApp()">
+
+        
+        <div class="hidden lg:flex flex-col w-80 xl:w-96 bg-white/50 dark:bg-gray-900/50 border-r border-gray-200 dark:border-gray-800/50 flex-shrink-0 backdrop-blur-xl">
+
+            
+            <div class="px-6 py-5 border-b border-gray-200 dark:border-gray-800/50 flex items-center justify-between bg-white/30 dark:bg-gray-900/30">
+                <div>
+                    <h2 class="font-black text-xl font-outfit text-gray-900 dark:text-white">Messages</h2>
+                    <p class="text-[10px] font-bold text-primary-500 uppercase tracking-widest mt-0.5"><?php echo e($connections->count()); ?> active</p>
+                </div>
+                <a href="<?php echo e(route('chat.index')); ?>" class="p-2 rounded-xl hover:bg-white dark:hover:bg-gray-800 transition shadow-sm border border-transparent hover:border-gray-200 dark:hover:border-gray-700">
+                    <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
+                </a>
+            </div>
+
+            
+            <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800/50">
+                <div class="relative group">
+                    <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-primary-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    <input type="text" placeholder="Search conversations…"
+                        x-model="sidebarSearch"
+                        class="w-full pl-11 pr-4 py-3 text-sm bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-200 dark:border-gray-700 outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-500/20 transition-all font-medium text-gray-900 dark:text-white shadow-sm">
+                </div>
+            </div>
+
+            
+            <div class="flex-1 overflow-y-auto hide-scrollbar">
+                <?php $__currentLoopData = $connections; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $c): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                    <?php $o = $c->otherUser(auth()->id()); ?>
+                    <a href="<?php echo e(route('chat.show', $c)); ?>"
+                        class="conv-item flex items-center gap-4 px-5 py-4 border-b border-gray-100 dark:border-gray-800/30 <?php echo e($c->id === $connection->id ? 'active' : ''); ?>">
+                        <div class="relative flex-shrink-0">
+                            <img src="<?php echo e($o->logoUrl()); ?>" alt="" class="w-12 h-12 rounded-2xl object-cover ring-2 ring-white dark:ring-gray-900 shadow-sm bg-white">
+                            <span class="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full ring-2 ring-white dark:ring-gray-900 shadow-sm border border-green-400"></span>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between gap-2 mb-1">
+                                <p class="font-bold text-sm truncate text-gray-900 dark:text-white"><?php echo e($o->companyName()); ?></p>
+                                <?php if($c->latestMessage): ?>
+                                    <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wider flex-shrink-0"><?php echo e($c->latestMessage->created_at->diffForHumans(null, true)); ?></span>
+                                <?php endif; ?>
+                            </div>
+                            <div class="flex items-center justify-between gap-2 mt-1">
+                                <p class="text-xs font-medium text-gray-500 truncate">
+                                    <?php if($c->latestMessage): ?>
+                                        <?php if($c->latestMessage->sender_id === auth()->id()): ?>
+                                            <span class="text-gray-400 font-bold">You: </span>
+                                        <?php endif; ?>
+                                        <?php echo e($c->latestMessage->content); ?>
+
+                                    <?php else: ?>
+                                        <span class="italic font-bold text-primary-500">New match! 👋</span>
+                                    <?php endif; ?>
+                                </p>
+                                <?php if(($c->unread_count ?? 0) > 0): ?>
+                                    <span class="flex-shrink-0 w-5 h-5 bg-gradient-to-br from-primary-500 to-pink-500 text-white text-[9px] font-black rounded-full flex items-center justify-center shadow-md">
+                                        <?php echo e($c->unread_count > 9 ? '9+' : $c->unread_count); ?>
+
+                                    </span>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </a>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+            </div>
+        </div>
+
+        
+        <div class="flex-1 flex flex-col min-w-0 bg-white/80 dark:bg-gray-900/80 relative backdrop-blur-xl">
+
+            
+            <div class="flex items-center gap-4 px-6 py-4 border-b border-gray-200 dark:border-gray-800/50 bg-white/50 dark:bg-gray-900/50 backdrop-blur-md shadow-sm z-10">
+                <a href="<?php echo e(route('chat.index')); ?>" class="lg:hidden p-2 -ml-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition">
+                    <svg class="w-6 h-6 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
+                </a>
+
+                <div class="relative">
+                    <img src="<?php echo e($other->logoUrl()); ?>" alt="" class="w-12 h-12 rounded-2xl object-cover ring-2 ring-white dark:ring-gray-900 shadow-md bg-white">
+                    
+                    <span class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full ring-2 ring-white dark:ring-gray-900 shadow-sm border transition-colors"
+                          :class="isOnline ? 'bg-green-500 border-green-400 online-dot' : 'bg-gray-300 dark:bg-gray-600 border-gray-200'"></span>
+                </div>
+
+                <div class="flex-1 min-w-0">
+                    <p class="font-black text-lg truncate text-gray-900 dark:text-white font-outfit"><?php echo e($other->companyName()); ?></p>
+                    
+                    <p class="text-xs font-black text-transparent bg-clip-text bg-gradient-to-r from-primary-500 to-purple-500 flex items-center gap-1.5 mt-0.5" x-show="isTyping" x-cloak>
+                        <span class="uppercase tracking-widest">Typing</span>
+                        <span class="inline-flex gap-0.5 items-end">
+                            <span class="typing-dot w-1 h-1 bg-primary-500 rounded-full inline-block"></span>
+                            <span class="typing-dot w-1 h-1 bg-primary-500 rounded-full inline-block"></span>
+                            <span class="typing-dot w-1 h-1 bg-primary-500 rounded-full inline-block"></span>
+                        </span>
+                    </p>
+                    <p class="text-xs font-bold tracking-wide truncate mt-0.5" x-show="!isTyping">
+                        <span x-show="isOnline" class="text-green-500 font-bold uppercase tracking-widest text-[10px]">● Online</span>
+                        <span x-show="!isOnline && lastSeenLabel" x-text="lastSeenLabel" class="text-gray-400 font-medium"></span>
+                        <span x-show="!isOnline && !lastSeenLabel" class="text-gray-400 font-medium uppercase tracking-widest text-[10px]">Offline</span>
+                    </p>
+                </div>
+
+                <div class="flex items-center gap-2 flex-shrink-0">
+                    <?php if(auth()->user()->isCorporate() && $other->isStartup()): ?>
+                        <a href="<?php echo e(route('profile.pdf', $other)); ?>"
+                            class="hidden sm:flex items-center gap-2 px-4 py-2 text-xs font-bold bg-purple-600 hover:bg-purple-700 text-white rounded-xl transition uppercase tracking-wider shadow-md shadow-purple-600/20" title="Download Startup PDF Report">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            Download PDF
+                        </a>
+                    <?php endif; ?>
+                    <a href="<?php echo e(route('profile.show', $other)); ?>"
+                        class="hidden sm:flex items-center gap-2 px-4 py-2 text-xs font-bold bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 rounded-xl hover:bg-primary-100 dark:hover:bg-primary-800/50 transition uppercase tracking-wider">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                        Profile
+                    </a>
+                    <?php if($other->isStartup() && $other->startupProfile?->website): ?>
+                        <a href="<?php echo e($other->startupProfile->website); ?>" target="_blank"
+                            class="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition" title="Visit website">
+                            <svg class="w-4 h-4 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                        </a>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            
+            <div class="px-6 py-3 bg-gray-50/40 dark:bg-[#0d0d12]/30 border-b border-gray-200 dark:border-gray-800/50 flex flex-col gap-3 relative z-20">
+                <div x-data="{ openReview: false }" class="w-full">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-black uppercase tracking-widest text-primary-500">Phase 5: Review & Feedback</span>
+                            <?php if($connection->hasRated(auth()->id())): ?>
+                                <span class="px-2 py-0.5 rounded-lg bg-green-100 dark:bg-green-950/40 text-green-700 dark:text-green-300 text-[10px] font-black uppercase tracking-wider">Completed</span>
+                            <?php else: ?>
+                                <span class="px-2 py-0.5 rounded-lg bg-yellow-100 dark:bg-yellow-950/40 text-yellow-700 dark:text-yellow-300 text-[10px] font-black uppercase tracking-wider animate-pulse">Pending Review</span>
+                            <?php endif; ?>
+                        </div>
+                        
+                        <button @click="openReview = !openReview" class="text-xs font-bold text-primary-600 hover:text-primary-700 transition flex items-center gap-1">
+                            <span x-text="openReview ? 'Hide Reviews' : 'Show Reviews & Ratings'"></span>
+                            <svg class="w-3.5 h-3.5 transition-transform" :class="openReview ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+                        </button>
+                    </div>
+
+                    <div x-show="openReview" x-cloak x-transition class="mt-4 grid md:grid-cols-2 gap-4 pt-3 border-t border-gray-100 dark:border-gray-800/40">
+                        
+                        
+                        <div class="glass-card rounded-2xl p-4 border border-gray-100 dark:border-gray-850/80">
+                            <h4 class="text-xs font-black uppercase tracking-wider text-gray-500 mb-2">My Review of <?php echo e($other->companyName()); ?></h4>
+                            
+                            <?php if($connection->hasRated(auth()->id())): ?>
+                                <?php $myReviewData = $connection->getRatingAndReview(auth()->id()); ?>
+                                <div class="space-y-2">
+                                    <div class="flex items-center gap-1 text-yellow-500 text-sm">
+                                        <?php for($i = 1; $i <= 5; $i++): ?>
+                                            <span><?php echo e($i <= $myReviewData['rating'] ? '★' : '☆'); ?></span>
+                                        <?php endfor; ?>
+                                        <span class="text-xs font-bold text-gray-400 ml-1">(<?php echo e($myReviewData['rating']); ?>/5)</span>
+                                    </div>
+                                    <?php if($myReviewData['review']): ?>
+                                        <p class="text-xs text-gray-600 dark:text-gray-400 font-medium italic">"<?php echo e($myReviewData['review']); ?>"</p>
+                                    <?php endif; ?>
+                                </div>
+                            <?php else: ?>
+                                <form method="POST" action="<?php echo e(route('connections.rate', $connection)); ?>" class="space-y-3">
+                                    <?php echo csrf_field(); ?>
+                                    <div>
+                                        <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">Rating</label>
+                                        <div class="flex items-center gap-1.5" x-data="{ hoverRating: 0, activeRating: 5 }">
+                                            <input type="hidden" name="rating" :value="activeRating">
+                                            <template x-for="star in [1, 2, 3, 4, 5]">
+                                                <button type="button" 
+                                                        @click="activeRating = star"
+                                                        @mouseover="hoverRating = star"
+                                                        @mouseleave="hoverRating = 0"
+                                                        class="text-xl transition-all duration-150 focus:outline-none"
+                                                        :class="star <= (hoverRating || activeRating) ? 'text-yellow-500 scale-110' : 'text-gray-300 dark:text-gray-700'">
+                                                    ★
+                                                </button>
+                                            </template>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">Review Comments</label>
+                                        <textarea name="review" rows="2" placeholder="Share your experience working with this partner..." 
+                                                  class="w-full px-3 py-1.5 text-xs rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 outline-none focus:border-primary-500 text-gray-900 dark:text-white font-medium"></textarea>
+                                    </div>
+                                    <button type="submit" class="w-full bg-gradient-to-r from-primary-600 to-purple-600 text-white font-bold py-2 rounded-xl text-xs hover:scale-[1.01] transition shadow-md shadow-primary-500/10">
+                                        Submit Rating & Review
+                                    </button>
+                                </form>
+                            <?php endif; ?>
+                        </div>
+
+                        
+                        <div class="glass-card rounded-2xl p-4 border border-gray-100 dark:border-gray-855/80 flex flex-col justify-between">
+                            <div>
+                                <h4 class="text-xs font-black uppercase tracking-wider text-gray-500 mb-2">Feedback From <?php echo e($other->companyName()); ?></h4>
+                                
+                                <?php $partnerReviewData = $connection->getRatingOfUser(auth()->id()); ?>
+                                <?php if(!is_null($partnerReviewData['rating'])): ?>
+                                    <div class="space-y-2">
+                                        <div class="flex items-center gap-1 text-yellow-500 text-sm">
+                                            <?php for($i = 1; $i <= 5; $i++): ?>
+                                                <span><?php echo e($i <= $partnerReviewData['rating'] ? '★' : '☆'); ?></span>
+                                            <?php endfor; ?>
+                                            <span class="text-xs font-bold text-gray-400 ml-1">(<?php echo e($partnerReviewData['rating']); ?>/5)</span>
+                                        </div>
+                                        <?php if($partnerReviewData['review']): ?>
+                                            <p class="text-xs text-gray-600 dark:text-gray-400 font-medium italic">"<?php echo e($partnerReviewData['review']); ?>"</p>
+                                        <?php endif; ?>
+                                    </div>
+                                <?php else: ?>
+                                    <div class="text-center py-4">
+                                        <span class="text-2xl mb-1 block animate-pulse">⏳</span>
+                                        <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Awaiting partner review</p>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+
+                            
+                            <div class="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800/40 flex items-center justify-between text-[10px] font-bold text-gray-400">
+                                <span>🌟 Score Contribution</span>
+                                <span class="text-green-500 font-extrabold uppercase">+10 LB Points</span>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            
+            <div class="flex-1 overflow-y-auto px-6 py-6 space-y-2 relative z-0" id="messages-container" x-ref="messages">
+                
+                
+                <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-primary-500/5 rounded-full blur-[100px] pointer-events-none -z-10"></div>
+
+                <template x-for="(msg, idx) in messages" :key="msg.id">
+                    <div>
+                        
+                        <template x-if="idx === 0 || messages[idx-1].date_label !== msg.date_label">
+                            <div class="date-separator" x-text="msg.date_label"></div>
+                        </template>
+
+                        
+                        <div :class="msg.is_mine ? 'justify-end' : 'justify-start'" class="flex items-end gap-3 mb-2 msg-bubble">
+                            
+                            
+                            <template x-if="!msg.is_mine">
+                                <div class="flex-shrink-0 w-8 h-8"
+                                    :style="(idx === messages.length - 1 || messages[idx+1]?.is_mine || messages[idx+1]?.date_label !== msg.date_label) ? '' : 'visibility:hidden'">
+                                    <img src="<?php echo e($other->logoUrl()); ?>" class="w-8 h-8 rounded-xl object-cover ring-2 ring-white dark:ring-gray-900 shadow-sm bg-white">
+                                </div>
+                            </template>
+
+                            <div :class="msg.is_mine ? 'items-end' : 'items-start'" class="flex flex-col max-w-[75%] sm:max-w-[60%]">
+                                <div :class="msg.is_mine
+                                    ? 'bg-gradient-to-br from-primary-600 to-purple-600 text-white rounded-t-2xl rounded-bl-2xl rounded-br-sm shadow-md shadow-primary-500/20'
+                                    : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-t-2xl rounded-br-2xl rounded-bl-sm shadow-md border border-gray-100 dark:border-gray-700/50'"
+                                    class="px-5 py-3 cursor-pointer select-none hover:brightness-105 active:scale-[0.99] transition-all"
+                                    @dblclick="activeInfoMsg = msg"
+                                    title="Double-click to see message details">
+                                    <p class="text-[15px] font-medium leading-relaxed whitespace-pre-wrap break-words" x-text="msg.content"></p>
+                                </div>
+                                <div :class="msg.is_mine ? 'justify-end' : 'justify-start'" class="flex items-center gap-1.5 mt-1 px-1">
+                                    <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider cursor-pointer" @dblclick="activeInfoMsg = msg" x-text="msg.created_at"></span>
+                                    <template x-if="msg.is_mine">
+                                        <span class="tick-wrapper cursor-pointer" @dblclick="activeInfoMsg = msg">
+                                            
+                                            <template x-if="String(msg.id).startsWith('temp-')">
+                                                <svg class="w-3 h-3 tick-sending" title="Sending..." fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                            </template>
+                                            
+                                            <template x-if="!String(msg.id).startsWith('temp-') && msg.read_at">
+                                                <svg class="tick-read" :title="'Sent: ' + msg.created_at + '\nDelivered: ' + msg.delivered_at + '\nRead: ' + msg.read_at" width="18" height="11" viewBox="0 0 18 11" fill="none">
+                                                    <path d="M1 5.5L5 9.5L13 1.5" stroke="#53bdeb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                    <path d="M5 5.5L9 9.5L17 1.5" stroke="#53bdeb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                </svg>
+                                            </template>
+                                            
+                                            <template x-if="!String(msg.id).startsWith('temp-') && !msg.read_at && msg.delivered_at">
+                                                <svg class="tick-delivered" :title="'Sent: ' + msg.created_at + '\nDelivered: ' + msg.delivered_at + '\nUnread'" width="18" height="11" viewBox="0 0 18 11" fill="none">
+                                                    <path d="M1 5.5L5 9.5L13 1.5" stroke="#9ca3af" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                    <path d="M5 5.5L9 9.5L17 1.5" stroke="#9ca3af" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                </svg>
+                                            </template>
+                                            
+                                            <template x-if="!String(msg.id).startsWith('temp-') && !msg.read_at && !msg.delivered_at">
+                                                <svg class="tick-sent" :title="'Sent: ' + msg.created_at + '\nPending delivery'" width="12" height="11" viewBox="0 0 12 11" fill="none">
+                                                    <path d="M1 5.5L4.5 9L11 1" stroke="#9ca3af" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                </svg>
+                                            </template>
+                                        </span>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+
+                
+                <div x-show="messages.length === 0" class="flex flex-col items-center justify-center h-full py-24 text-center">
+                    <div class="text-6xl mb-6 drop-shadow-xl animate-bounce">🎉</div>
+                    <p class="font-black text-2xl mb-2 font-outfit text-gray-900 dark:text-white">You matched with <?php echo e($other->companyName()); ?>!</p>
+                    <p class="text-base text-gray-500 font-medium max-w-sm leading-relaxed">Break the ice — introduce yourself or share what you're looking for in a partnership.</p>
+                </div>
+
+                
+                <div x-show="isTyping" x-cloak class="flex items-end gap-3 mt-4">
+                    <img src="<?php echo e($other->logoUrl()); ?>" class="w-8 h-8 rounded-xl object-cover flex-shrink-0 bg-white ring-2 ring-white dark:ring-gray-900 shadow-sm">
+                    <div class="bg-white dark:bg-gray-800 px-5 py-4 rounded-t-2xl rounded-br-2xl rounded-bl-sm shadow-md border border-gray-100 dark:border-gray-700/50">
+                        <div class="flex gap-1.5 items-center">
+                            <span class="typing-dot w-2 h-2 bg-primary-400 rounded-full"></span>
+                            <span class="typing-dot w-2 h-2 bg-primary-400 rounded-full"></span>
+                            <span class="typing-dot w-2 h-2 bg-primary-400 rounded-full"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="bottom-anchor" class="h-4"></div>
+            </div>
+
+            
+            <div x-show="showEmoji" x-cloak @click.outside="showEmoji = false"
+                class="absolute bottom-full mb-4 left-6 bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 z-50">
+                <div class="emoji-grid w-64 max-h-48 overflow-y-auto hide-scrollbar">
+                    <template x-for="e in emojis" :key="e">
+                        <button @click="addEmoji(e)" type="button" class="emoji-btn" x-text="e"></button>
+                    </template>
+                </div>
+            </div>
+
+            
+            <div class="border-t border-gray-200 dark:border-gray-800/50 bg-white/80 dark:bg-gray-900/80 px-6 py-4 backdrop-blur-md">
+                <form @submit.prevent="sendMessage()" class="relative flex items-end gap-3">
+                    
+                    
+                    <div class="flex-1 relative bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm focus-within:ring-4 focus-within:ring-primary-500/20 focus-within:border-primary-500 transition-all flex items-end pr-2">
+                        
+                        <button type="button" @click="showEmoji = !showEmoji"
+                            :class="showEmoji ? 'text-primary-500' : 'text-gray-400 hover:text-primary-500'"
+                            class="p-3 transition-colors flex-shrink-0">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        </button>
+
+                        <textarea
+                            id="msg-input"
+                            x-model="newMessage"
+                            @keydown.enter.prevent="if (!$event.shiftKey) { sendMessage(); } else { newMessage += '\n'; }"
+                            @input="handleTyping()"
+                            placeholder="Type your message..."
+                            rows="1"
+                            class="w-full resize-none py-3.5 px-2 bg-transparent text-[15px] font-medium outline-none max-h-32 overflow-y-auto dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 hide-scrollbar"
+                            style="min-height: 52px;"
+                            :style="'height: auto; height: ' + Math.min(newMessage.split('\n').length, 4) * 24 + 52 + 'px'"
+                        ></textarea>
+                    </div>
+
+                    
+                    <button type="submit"
+                        :disabled="!newMessage.trim() || sending"
+                        :class="newMessage.trim() ? 'bg-gradient-to-r from-primary-600 to-purple-600 shadow-lg shadow-primary-500/30 hover:scale-105 hover:-translate-y-1' : 'bg-gray-200 dark:bg-gray-700 cursor-not-allowed'"
+                        class="h-[52px] w-[52px] rounded-2xl text-white transition-all duration-300 flex-shrink-0 flex items-center justify-center">
+                        <svg x-show="!sending" class="w-6 h-6 translate-x-px" fill="currentColor" viewBox="0 0 20 20"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"/></svg>
+                        <svg x-show="sending" x-cloak class="w-6 h-6 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/></svg>
+                    </button>
+                </form>
+                <div class="flex justify-between items-center mt-2 px-1">
+                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Shift + Enter for new line</p>
+                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1"><svg class="w-3 h-3 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/></svg> End-to-end secured</p>
+                </div>
+            </div>
+        </div>
+
+        
+        <div x-show="activeInfoMsg" 
+             x-cloak 
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0 scale-95"
+             x-transition:enter-end="opacity-100 scale-100"
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="opacity-100 scale-100"
+             x-transition:leave-end="opacity-0 scale-95"
+             class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+             @click.self="activeInfoMsg = null">
+            
+            <div class="bg-white dark:bg-gray-800 rounded-3xl w-full max-w-md overflow-hidden border border-gray-100 dark:border-gray-700 shadow-2xl">
+                
+                <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/30 flex justify-between items-center">
+                    <h3 class="font-black text-lg text-gray-900 dark:text-white font-outfit">Message Info</h3>
+                    <button @click="activeInfoMsg = null" class="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                        <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+                
+                
+                <div class="p-6 space-y-6">
+                    
+                    <div>
+                        <span class="text-[10px] font-black text-primary-500 uppercase tracking-widest block mb-2">Message Content</span>
+                        <div class="p-4 rounded-2xl bg-gray-50 dark:bg-gray-900/50 border border-gray-105 dark:border-gray-800 text-sm font-medium text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words leading-relaxed max-h-32 overflow-y-auto" x-text="activeInfoMsg?.content"></div>
+                    </div>
+                    
+                    
+                    <div class="space-y-4 relative before:absolute before:left-3 before:top-2 before:bottom-2 before:w-0.5 before:bg-gray-200 dark:before:bg-gray-700">
+                        
+                        <div class="flex items-start gap-4 relative">
+                            <div class="w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center border-4 border-white dark:border-gray-800 z-10">
+                                <svg class="w-3 h-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-wider">Sent</p>
+                                <p class="text-[10px] text-gray-400 font-bold" x-text="activeInfoMsg ? activeInfoMsg.created_at : ''"></p>
+                            </div>
+                        </div>
+                        
+                        
+                        <div class="flex items-start gap-4 relative">
+                            <div class="w-6 h-6 rounded-full flex items-center justify-center border-4 border-white dark:border-gray-800 z-10"
+                                 :class="activeInfoMsg?.delivered_at ? 'bg-gray-200 dark:bg-gray-600' : 'bg-gray-50 dark:bg-gray-900'">
+                                <svg class="w-3 h-3" :class="activeInfoMsg?.delivered_at ? 'text-gray-600 dark:text-gray-300' : 'text-gray-300 dark:text-gray-700'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7m-5-5l5 5L19 7"/>
+                                </svg>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-xs font-bold uppercase tracking-wider" :class="activeInfoMsg?.delivered_at ? 'text-gray-900 dark:text-white' : 'text-gray-400'">Delivered</p>
+                                <p class="text-[10px] font-bold" :class="activeInfoMsg?.delivered_at ? 'text-gray-400' : 'text-gray-300 dark:text-gray-700'" x-text="activeInfoMsg?.delivered_at ? activeInfoMsg.delivered_at : 'Pending'"></p>
+                            </div>
+                        </div>
+                        
+                        
+                        <div class="flex items-start gap-4 relative">
+                            <div class="w-6 h-6 rounded-full flex items-center justify-center border-4 border-white dark:border-gray-800 z-10"
+                                 :class="activeInfoMsg?.read_at ? 'bg-primary-100 dark:bg-primary-950/40' : 'bg-gray-50 dark:bg-gray-900'">
+                                <svg class="w-3 h-3" :class="activeInfoMsg?.read_at ? 'text-primary-500' : 'text-gray-300 dark:text-gray-700'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7m-5-5l5 5L19 7"/>
+                                </svg>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-xs font-bold uppercase tracking-wider" :class="activeInfoMsg?.read_at ? 'text-primary-500' : 'text-gray-400'">Read</p>
+                                <p class="text-[10px] font-bold" :class="activeInfoMsg?.read_at ? 'text-gray-400' : 'text-gray-300 dark:text-gray-700'" x-text="activeInfoMsg?.read_at ? activeInfoMsg.read_at : 'Pending'"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                
+                <div class="px-6 py-4 bg-gray-50/50 dark:bg-gray-900/30 border-t border-gray-100 dark:border-gray-700 flex justify-end">
+                    <button @click="activeInfoMsg = null" class="px-5 py-2 text-xs font-bold bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-650 transition uppercase tracking-wider">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<?php
+$messagesJson = $messages->map(function($m) {
+    return [
+        'id'         => $m->id,
+        'content'    => $m->content,
+        'sender_id'  => $m->sender_id,
+        'created_at' => $m->created_at->format('h:i A'),
+        'date_label' => $m->created_at->isToday() ? 'Today' : ($m->created_at->isYesterday() ? 'Yesterday' : $m->created_at->format('M d, Y')),
+        'is_mine'    => $m->sender_id === auth()->id(),
+        'read_at'    => $m->read_at ? $m->read_at->format('h:i A') : null,
+        'delivered_at' => $m->delivered_at ? $m->delivered_at->format('h:i A') : null,
+    ];
+})->values()->toArray();
+?>
+<?php $__env->startPush('scripts'); ?>
+<script>
+function chatApp() {
+    return {
+        messages: <?php echo json_encode($messagesJson, 15, 512) ?>,
+        newMessage:    '',
+        lastId:        <?php echo e($messages->last()?->id ?? 0); ?>,
+        isTyping:      false,
+        isOnline:      false,
+        lastSeenLabel: null,
+        activeInfoMsg: null,
+        showEmoji:     false,
+        sending:       false,
+        sidebarSearch: '',
+        typingTimer:   null,
+        sendUrl:       '<?php echo e(route("chat.send", $connection)); ?>',
+        fetchUrl:      '<?php echo e(route("chat.fetch", $connection)); ?>',
+        typingSetUrl:  '<?php echo e(route("chat.typing", $connection)); ?>',
+        typingGetUrl:  '<?php echo e(route("chat.typing.get", $connection)); ?>',
+        pingUrl:       '<?php echo e(route("chat.ping")); ?>',
+        onlineUrl:     '<?php echo e(route("chat.online", $connection)); ?>',
+        csrfToken:     document.querySelector('meta[name="csrf-token"]').content,
+
+        emojis: ['😊','😂','🎉','👍','🔥','💡','🚀','💼','🤝','✅','❤️','⭐','🎯','💪','🙏',
+                 '😎','🤔','💰','📈','🌟','👏','🎊','🏆','💬','📧','🔗','🎨','📱','💻','🌍'],
+
+        init() {
+            this.scrollDown();
+            this.startPolling();
+            this.pollTyping();
+            this.pingOnline();          // announce self as online
+            this.pollOnlineStatus();    // check other user's status
+            setInterval(() => this.pingOnline(), 30000); // keep alive every 30s
+        },
+
+        scrollDown(smooth = false) {
+            this.$nextTick(() => {
+                const el = this.$refs.messages;
+                if (!el) return;
+                el.scrollTo({ top: el.scrollHeight, behavior: smooth ? 'smooth' : 'instant' });
+            });
+        },
+
+        async sendMessage() {
+            if (!this.newMessage.trim() || this.sending) return;
+            const content = this.newMessage.trim();
+            this.newMessage = '';
+            this.showEmoji = false;
+            this.sending   = true;
+
+            // Optimistic UI
+            const tempMsg = {
+                id: 'temp-' + Date.now(),
+                content,
+                sender_id:  <?php echo e(auth()->id()); ?>,
+                created_at: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+                date_label: 'Today',
+                is_mine:    true,
+                read_at:    null,
+            };
+            this.messages.push(tempMsg);
+            this.scrollDown(true);
+
+            try {
+                const res  = await fetch(this.sendUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': this.csrfToken,
+                        'Accept':       'application/json',
+                    },
+                    body: JSON.stringify({ content }),
+                });
+                const data = await res.json();
+                // Replace temp with real
+                const idx = this.messages.findIndex(m => m.id === tempMsg.id);
+                if (idx !== -1) this.messages.splice(idx, 1, data.message);
+                this.lastId = data.message.id;
+            } catch (e) {
+                // Restore on failure
+                this.newMessage = content;
+                this.messages = this.messages.filter(m => m.id !== tempMsg.id);
+            } finally {
+                this.sending = false;
+            }
+        },
+
+        handleTyping() {
+            clearTimeout(this.typingTimer);
+            fetch(this.typingSetUrl, {
+                method:  'POST',
+                headers: { 'X-CSRF-TOKEN': this.csrfToken, 'Content-Type': 'application/json' },
+                body:    JSON.stringify({}),
+            }).catch(() => {});
+            this.typingTimer = setTimeout(() => {}, 3000);
+        },
+
+        async startPolling() {
+            setInterval(async () => {
+                try {
+                    const res  = await fetch(`${this.fetchUrl}?after=${this.lastId}`);
+                    const data = await res.json();
+
+                    if (data.messages?.length) {
+                        data.messages.forEach(m => {
+                            if (!this.messages.find(x => x.id === m.id)) {
+                                this.messages.push(m);
+                                this.lastId = Math.max(this.lastId, m.id);
+                            }
+                        });
+                        this.scrollDown(true);
+                    }
+
+                    // Update read and delivered receipts
+                    if (data.last_read_sent_id) {
+                        this.messages.forEach(m => {
+                            if (m.is_mine && m.id <= data.last_read_sent_id) {
+                                if (!m.read_at) m.read_at = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                                if (!m.delivered_at) m.delivered_at = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                            }
+                        });
+                    }
+                    if (data.last_delivered_sent_id) {
+                        this.messages.forEach(m => {
+                            if (m.is_mine && m.id <= data.last_delivered_sent_id && !m.delivered_at) {
+                                m.delivered_at = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                            }
+                        });
+                    }
+                } catch (e) {}
+            }, 1500);
+        },
+
+        async pollTyping() {
+            setInterval(async () => {
+                try {
+                    const res  = await fetch(this.typingGetUrl);
+                    const data = await res.json();
+                    this.isTyping = data.typing;
+                } catch (e) {}
+            }, 2000);
+        },
+
+        async pingOnline() {
+            try {
+                await fetch(this.pingUrl, {
+                    method:  'POST',
+                    headers: { 'X-CSRF-TOKEN': this.csrfToken, 'Content-Type': 'application/json' },
+                    body:    JSON.stringify({}),
+                });
+            } catch (e) {}
+        },
+
+        async pollOnlineStatus() {
+            const check = async () => {
+                try {
+                    const res  = await fetch(this.onlineUrl);
+                    const data = await res.json();
+                    this.isOnline      = data.online;
+                    this.lastSeenLabel = data.last_seen;
+
+                    // Update read and delivered receipts
+                    if (data.last_read_sent_id) {
+                        this.messages.forEach(m => {
+                            if (m.is_mine && m.id <= data.last_read_sent_id) {
+                                if (!m.read_at) m.read_at = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                                if (!m.delivered_at) m.delivered_at = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                            }
+                        });
+                    }
+                    if (data.last_delivered_sent_id) {
+                        this.messages.forEach(m => {
+                            if (m.is_mine && m.id <= data.last_delivered_sent_id && !m.delivered_at) {
+                                m.delivered_at = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                            }
+                        });
+                    }
+                } catch (e) {}
+            };
+            await check();
+            setInterval(check, 10000); // refresh every 10 seconds
+        },
+
+        addEmoji(e) {
+            this.newMessage += e;
+            this.showEmoji = false;
+            document.getElementById('msg-input').focus();
+        },
+    };
+}
+</script>
+<?php $__env->stopPush(); ?>
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts.app', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH C:\Users\user\Desktop\startup-corporate-platform\resources\views\chat\show.blade.php ENDPATH**/ ?>

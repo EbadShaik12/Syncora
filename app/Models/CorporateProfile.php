@@ -11,10 +11,11 @@ class CorporateProfile extends Model
     use HasFactory;
 
     protected $fillable = [
-        'user_id', 'company_name', 'logo', 'industry_id', 'company_size', 'about',
+        'user_id', 'company_name', 'logo', 'banner', 'industry_id', 'company_size', 'about',
         'problem_statement', 'partnership_types', 'seeking_technologies',
         'seeking_stages', 'budget_min', 'budget_max', 'website', 'linkedin',
         'city', 'state', 'country',
+        'mission', 'vision', 'annual_revenue',
     ];
 
     protected $casts = [

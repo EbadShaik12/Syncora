@@ -1,8 +1,16 @@
 @extends('layouts.app')
-@section('title', 'Join StartupConnect')
+@section('title', 'Join Syncora')
 
 @section('content')
 <div class="min-h-screen flex items-center justify-center px-4 py-12 relative overflow-hidden">
+    
+    {{-- Floating Back Button --}}
+    <div class="absolute top-8 left-8 z-20 reveal">
+        <a href="{{ route('home') }}" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold text-slate-600 dark:text-zinc-400 border border-slate-200/60 dark:border-zinc-800 bg-white/60 dark:bg-zinc-900/60 hover:bg-slate-100 dark:hover:bg-zinc-800/80 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-zinc-700 transition-all shadow-sm hover:scale-105 backdrop-blur-md">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+            Back to Home
+        </a>
+    </div>
     
     {{-- Animated Blobs --}}
     <div class="absolute top-20 left-10 w-96 h-96 bg-primary-500/20 rounded-full blur-[100px] blob"></div>
@@ -13,11 +21,14 @@
         {{-- Header --}}
         <div class="reveal text-center mb-16">
             <a href="{{ route('home') }}" class="inline-flex items-center justify-center mb-8 magnetic">
-                <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-500 to-purple-600 flex items-center justify-center shadow-xl shadow-primary-500/30">
-                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                <div class="bg-white rounded-2xl p-4 shadow-xl border border-slate-200/40 dark:border-white/10 inline-flex items-center justify-center gap-3">
+                    <div class="w-12 h-12 rounded-full overflow-hidden relative bg-white flex items-center justify-center shadow-sm border border-slate-100 flex-shrink-0">
+                        <img src="{{ asset('images/logo.png') }}" class="w-full h-full object-cover scale-[1.7] -translate-y-[15%] flex-shrink-0" alt="Syncora Icon">
+                    </div>
+                    <img src="{{ asset('images/logo-text.png') }}" class="h-8 w-auto object-contain dark:invert transition-all duration-300" alt="Syncora Text">
                 </div>
             </a>
-            <h2 class="text-4xl sm:text-5xl font-black mb-4 font-outfit">Join <span class="text-gradient">StartupConnect</span></h2>
+            <h2 class="text-4xl sm:text-5xl font-black mb-4 font-outfit">Join <span class="text-gradient">Syncora</span></h2>
             <p class="text-gray-500 dark:text-gray-400 text-lg font-medium">Choose your role to start building the future</p>
         </div>
 

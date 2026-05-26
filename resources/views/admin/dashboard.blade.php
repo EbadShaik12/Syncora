@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@section('title', 'Admin Analytics — StartupConnect')
+@section('title', 'Admin Analytics — Syncora')
 
 @push('styles')
 <style>

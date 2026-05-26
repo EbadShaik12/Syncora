@@ -39,6 +39,7 @@ class CorporateDashboardController extends Controller
                                                  ->count(),
             'applications_received' => ChallengeApplication::whereIn('challenge_id', $myChallengeIds)
                                                            ->count(),
+            'badges'                => $user->badges()->count(),
         ];
 
         // Fetch corporate's own challenges

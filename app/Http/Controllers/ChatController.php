@@ -44,7 +44,12 @@ class ChatController extends Controller
             abort(403);
         }
 
-        // Mark messages as read
+        // Mark messages as read and delivered
+        Message::where('connection_id', $connection->id)
+            ->where('sender_id', '!=', $user->id)
+            ->whereNull('delivered_at')
+            ->update(['delivered_at' => now()]);
+
         Message::where('connection_id', $connection->id)
             ->where('sender_id', '!=', $user->id)
             ->whereNull('read_at')
@@ -89,6 +94,13 @@ class ChatController extends Controller
         Cache::forget("typing:{$connection->id}:{$user->id}");
 
         $receiver = $connection->otherUser($user->id);
+        $lastSeenAt = Cache::get("user_online:{$receiver->id}");
+        $isOnline   = $lastSeenAt !== null && now()->diffInSeconds(\Carbon\Carbon::parse($lastSeenAt)) < 90;
+
+        if ($isOnline) {
+            $message->update(['delivered_at' => now()]);
+        }
+
         $notificationService->notifyMessage($receiver, $user, $connection->id);
 
         // Dynamic Badge Award Trigger
@@ -106,6 +118,7 @@ class ChatController extends Controller
                     : ($message->created_at->isYesterday() ? 'Yesterday' : $message->created_at->format('M d, Y')),
                 'is_mine'    => true,
                 'read_at'    => null,
+                'delivered_at' => $message->delivered_at ? $message->delivered_at->format('h:i A') : null,
             ],
         ]);
     }
@@ -124,16 +137,26 @@ class ChatController extends Controller
             ->orderBy('id')
             ->get();
 
-        // Mark as read
+        // Mark as delivered and read
+        Message::where('connection_id', $connection->id)
+            ->where('sender_id', '!=', $user->id)
+            ->whereNull('delivered_at')
+            ->update(['delivered_at' => now()]);
+
         Message::where('connection_id', $connection->id)
             ->where('sender_id', '!=', $user->id)
             ->whereNull('read_at')
             ->update(['read_at' => now()]);
 
-        // Check if current user's sent messages have been read
+        // Check if current user's sent messages have been read/delivered
         $readUpdate = Message::where('connection_id', $connection->id)
             ->where('sender_id', $user->id)
             ->whereNotNull('read_at')
+            ->max('id');
+
+        $deliveredUpdate = Message::where('connection_id', $connection->id)
+            ->where('sender_id', $user->id)
+            ->whereNotNull('delivered_at')
             ->max('id');
 
         return response()->json([
@@ -147,8 +170,10 @@ class ChatController extends Controller
                     : ($m->created_at->isYesterday() ? 'Yesterday' : $m->created_at->format('M d, Y')),
                 'is_mine'    => false,
                 'read_at'    => $m->read_at?->format('h:i A'),
+                'delivered_at' => $m->delivered_at?->format('h:i A'),
             ]),
             'last_read_sent_id' => $readUpdate,
+            'last_delivered_sent_id' => $deliveredUpdate,
         ]);
     }
 
@@ -214,5 +239,69 @@ class ChatController extends Controller
         app(\App\Services\BadgeService::class)->checkAndAward($user);
 
         return back()->with('success', 'Partner rated successfully!');
+    }
+
+    /**
+     * Update current user's online presence (ping every 30s from JS).
+     */
+    public function pingOnline()
+    {
+        $user = auth()->user();
+        Cache::put("user_online:{$user->id}", now()->toIso8601String(), now()->addSeconds(90));
+        return response()->json(['ok' => true]);
+    }
+
+    /**
+     * Return online status + last seen for the OTHER user in this connection.
+     */
+    public function getOnlineStatus(Connection $connection)
+    {
+        $user = auth()->user();
+        if ($connection->user_one_id !== $user->id && $connection->user_two_id !== $user->id) {
+            abort(403);
+        }
+
+        $otherId   = $connection->user_one_id === $user->id
+            ? $connection->user_two_id
+            : $connection->user_one_id;
+
+        $lastSeenAt = Cache::get("user_online:{$otherId}");
+        $isOnline   = $lastSeenAt !== null && now()->diffInSeconds(\Carbon\Carbon::parse($lastSeenAt)) < 90;
+
+        if ($isOnline) {
+            Message::where('connection_id', $connection->id)
+                ->where('sender_id', $user->id)
+                ->whereNull('delivered_at')
+                ->update(['delivered_at' => now()]);
+        }
+
+        $lastSeenLabel = null;
+        if (!$isOnline && $lastSeenAt) {
+            $carbonLastSeen = \Carbon\Carbon::parse($lastSeenAt);
+            if ($carbonLastSeen->isToday()) {
+                $lastSeenLabel = "last seen today at " . $carbonLastSeen->format('h:i A');
+            } elseif ($carbonLastSeen->isYesterday()) {
+                $lastSeenLabel = "last seen yesterday at " . $carbonLastSeen->format('h:i A');
+            } else {
+                $lastSeenLabel = "last seen on " . $carbonLastSeen->format('M d') . " at " . $carbonLastSeen->format('h:i A');
+            }
+        }
+
+        $readUpdate = Message::where('connection_id', $connection->id)
+            ->where('sender_id', $user->id)
+            ->whereNotNull('read_at')
+            ->max('id');
+
+        $deliveredUpdate = Message::where('connection_id', $connection->id)
+            ->where('sender_id', $user->id)
+            ->whereNotNull('delivered_at')
+            ->max('id');
+
+        return response()->json([
+            'online'                 => $isOnline,
+            'last_seen'              => $lastSeenLabel,
+            'last_read_sent_id'      => $readUpdate,
+            'last_delivered_sent_id' => $deliveredUpdate,
+        ]);
     }
 }

@@ -6,7 +6,7 @@
 
 <div class="mb-6">
     <a href="<?php echo e($fallback); ?>"
-       onclick="if(window.history.length > 1){ event.preventDefault(); window.history.back(); }"
+       onclick="if (window.hasUnsavedChanges && window.hasUnsavedChanges()) { event.preventDefault(); window.showUnsavedChangesModal(() => { if (window.history.length > 1) { window.history.back(); } else { window.location.href = '<?php echo e($fallback); ?>'; } }, () => {}); } else if (window.history.length > 1) { event.preventDefault(); window.history.back(); }"
        class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold
               text-gray-500 dark:text-gray-400
               hover:text-gray-900 dark:hover:text-white
