@@ -2,7 +2,7 @@
 @section('title', 'Admin Analytics — Syncora')
 
 @push('styles')
-<style>
+<style type="text/tailwindcss">
 @keyframes countUp { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
 @keyframes slideUp { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
 .stat-card  { animation: slideUp 0.5s ease forwards; opacity:0; }

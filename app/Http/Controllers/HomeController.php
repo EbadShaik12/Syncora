@@ -13,10 +13,6 @@ class HomeController extends Controller
 {
     public function index()
     {
-        if (auth()->check()) {
-            return redirect()->route('dashboard');
-        }
-
         $stats = [
             'startups'    => max(User::where('role', 'startup')->where('status', 'approved')->count(), 120),
             'corporates'  => max(User::where('role', 'corporate')->where('status', 'approved')->count(), 48),

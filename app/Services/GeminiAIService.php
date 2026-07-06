@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Log;
 /**
  * GeminiAIService
  *
- * Calls the Google Gemini API (gemini-1.5-flash) to produce:
+ * Calls the Google Gemini API (gemini-2.5-flash) to produce:
  *  - AI-powered compatibility scores between a startup and a corporate
  *  - AI-powered leaderboard ranking scores for startups and corporates
  *
@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\Log;
 class GeminiAIService
 {
     private string $apiKey;
-    private string $endpoint = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
+    private string $endpoint = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
 
     public function __construct()
     {
@@ -47,12 +47,19 @@ class GeminiAIService
     {
         $cacheKey = 'gemini_compat_' . md5(json_encode($startupData) . json_encode($corporateData));
 
-        return Cache::remember($cacheKey, now()->addHour(), function () use ($startupData, $corporateData) {
-            $prompt = $this->buildCompatibilityPrompt($startupData, $corporateData);
-            $raw    = $this->callGemini($prompt);
+        if (Cache::has($cacheKey)) {
+            return Cache::get($cacheKey);
+        }
 
-            return $this->parseCompatibilityResponse($raw);
-        });
+        $prompt = $this->buildCompatibilityPrompt($startupData, $corporateData);
+        $raw    = $this->callGemini($prompt);
+        $result = $this->parseCompatibilityResponse($raw);
+
+        if ($raw !== null) {
+            Cache::put($cacheKey, $result, now()->addHour());
+        }
+
+        return $result;
     }
 
     /**
@@ -70,12 +77,19 @@ class GeminiAIService
     {
         $cacheKey = 'gemini_rank_startup_' . md5(json_encode($startupData) . json_encode($metrics));
 
-        return Cache::remember($cacheKey, now()->addHour(), function () use ($startupData, $metrics) {
-            $prompt = $this->buildStartupRankPrompt($startupData, $metrics);
-            $raw    = $this->callGemini($prompt);
+        if (Cache::has($cacheKey)) {
+            return Cache::get($cacheKey);
+        }
 
-            return $this->parseRankResponse($raw, 'startup');
-        });
+        $prompt = $this->buildStartupRankPrompt($startupData, $metrics);
+        $raw    = $this->callGemini($prompt);
+        $result = $this->parseRankResponse($raw, 'startup');
+
+        if ($raw !== null) {
+            Cache::put($cacheKey, $result, now()->addHour());
+        }
+
+        return $result;
     }
 
     /**
@@ -87,12 +101,19 @@ class GeminiAIService
     {
         $cacheKey = 'gemini_rank_corporate_' . md5(json_encode($corporateData) . json_encode($metrics));
 
-        return Cache::remember($cacheKey, now()->addHour(), function () use ($corporateData, $metrics) {
-            $prompt = $this->buildCorporateRankPrompt($corporateData, $metrics);
-            $raw    = $this->callGemini($prompt);
+        if (Cache::has($cacheKey)) {
+            return Cache::get($cacheKey);
+        }
 
-            return $this->parseRankResponse($raw, 'corporate');
-        });
+        $prompt = $this->buildCorporateRankPrompt($corporateData, $metrics);
+        $raw    = $this->callGemini($prompt);
+        $result = $this->parseRankResponse($raw, 'corporate');
+
+        if ($raw !== null) {
+            Cache::put($cacheKey, $result, now()->addHour());
+        }
+
+        return $result;
     }
 
     // ──────────────────────────────────────────────────────────────────────────
@@ -244,7 +265,7 @@ PROMPT;
                     ],
                     'generationConfig' => [
                         'temperature'     => 0.3,
-                        'maxOutputTokens' => 512,
+                        'maxOutputTokens' => 4096,
                         'responseMimeType' => 'application/json',
                     ],
                 ]);

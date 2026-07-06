@@ -2,7 +2,7 @@
 @section('title', 'Search ' . ($targetRole === 'startup' ? 'Startups' : 'Corporates'))
 
 @push('styles')
-<style>
+<style type="text/tailwindcss">
     .filter-chip { @apply inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold border transition-all select-none; }
     .filter-chip-inactive { @apply border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400 bg-white/50 dark:bg-gray-900/50 hover:border-primary-400 hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/30; }
     .filter-chip-active   { @apply border-primary-500 bg-gradient-to-r from-primary-500 to-purple-600 text-white shadow-lg shadow-primary-500/30; }

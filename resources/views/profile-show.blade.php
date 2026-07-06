@@ -2,7 +2,7 @@
 @section('title', $user->companyName() . ' — Profile')
 
 @push('styles')
-<style>
+<style type="text/tailwindcss">
 .cover-gradient { background: linear-gradient(135deg, #4f46e5 0%, #a855f7 50%, #ec4899 100%); }
 .stat-card { @apply bg-white/20 backdrop-blur-md border border-white/30 rounded-2xl px-6 py-4 text-white text-center shadow-lg; }
 .info-row { @apply flex items-center justify-between py-3 border-b border-gray-100 dark:border-gray-800/50 last:border-0; }
