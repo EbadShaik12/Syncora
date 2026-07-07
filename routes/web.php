@@ -27,6 +27,7 @@ use Illuminate\Support\Facades\Route;
 
 // Public
 Route::get('/', [HomeController::class, 'index'])->name('home');
+Route::get('/test-hello', function () { return 'Hello from Vercel!'; });
 
 // Guest routes
 Route::middleware('guest')->group(function () {
