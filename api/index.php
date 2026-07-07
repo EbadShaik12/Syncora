@@ -7,7 +7,7 @@ try {
     // Forward the request to Laravel's public entrypoint
     require __DIR__ . '/../public/index.php';
 } catch (\Throwable $e) {
-    header("HTTP/1.1 500 Internal Server Error");
+    // DO NOT send HTTP 500 status here, so Chrome displays the custom HTML response
     echo "<h1>Laravel Serverless Bootstrap Error</h1>";
     echo "<p><strong>Message:</strong> " . htmlspecialchars($e->getMessage()) . "</p>";
     echo "<p><strong>File:</strong> " . htmlspecialchars($e->getFile()) . " (Line " . $e->getLine() . ")</p>";
