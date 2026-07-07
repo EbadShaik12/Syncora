@@ -4,7 +4,7 @@ return [
     'name' => env('APP_NAME', 'Syncora'),
     'env' => env('APP_ENV', 'production'),
     'debug' => (bool) env('APP_DEBUG', false),
-    'url' => env('APP_URL', 'http://localhost'),
+    'url' => env('APP_URL', 'https://syncoraame.vercel.app'),
     'asset_url' => env('ASSET_URL'),
     'timezone' => 'Asia/Kolkata',
     'locale' => 'en',

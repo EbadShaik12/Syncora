@@ -1,5 +1,11 @@
 <?php
 
+// Force HTTPS: Vercel terminates SSL at the CDN level so $_SERVER['HTTPS']
+// is never set inside the PHP function. We must tell Laravel explicitly.
+$_SERVER['HTTPS'] = 'on';
+$_SERVER['HTTP_X_FORWARDED_PROTO'] = 'https';
+$_SERVER['SERVER_PORT'] = 443;
+
 // Redirect Laravel cache files to /tmp for serverless compatibility
 // The serverless filesystem is read-only, so all generated cache files
 // must be written to /tmp which is the only writable directory
