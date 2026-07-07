@@ -1,8 +1,16 @@
 <?php
 
+error_reporting(E_ALL);
+ini_set('display_errors', '1');
+
 try {
-    // Forward the request to Laravel's public entrypoint
-    require __DIR__ . '/../public/index.php';
+    require __DIR__ . '/../vendor/autoload.php';
+    $app = require_once __DIR__ . '/../bootstrap/app.php';
+    
+    // Explicitly run the bootstrap process to crash and bubble up the primary exception
+    $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+    
+    echo "<h1>Laravel Bootstrap Success</h1>";
 } catch (\Throwable $e) {
     echo "<h1>Laravel Serverless Bootstrap Error</h1>";
     echo "<p><strong>Message:</strong> " . htmlspecialchars($e->getMessage()) . "</p>";
