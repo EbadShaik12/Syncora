@@ -29,3 +29,4 @@ yarn-error.log
 /storage/framework/views/*
 /storage/logs/*
 *.log
+/bootstrap/cache/*.php
