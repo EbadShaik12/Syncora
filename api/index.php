@@ -1,5 +1,20 @@
 <?php
 
+// Redirect Laravel cache files to /tmp for serverless compatibility
+$cacheVars = [
+    'APP_PACKAGES_CACHE' => '/tmp/packages.php',
+    'APP_SERVICES_CACHE' => '/tmp/services.php',
+    'APP_CONFIG_CACHE' => '/tmp/config.php',
+    'APP_ROUTES_CACHE' => '/tmp/routes.php',
+    'APP_EVENTS_CACHE' => '/tmp/events.php',
+];
+
+foreach ($cacheVars as $key => $val) {
+    putenv("{$key}={$val}");
+    $_ENV[$key] = $val;
+    $_SERVER[$key] = $val;
+}
+
 error_reporting(E_ALL);
 ini_set('display_errors', '1');
 
