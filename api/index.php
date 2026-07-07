@@ -23,5 +23,20 @@ foreach ($cacheVars as $key => $val) {
     $_SERVER[$key] = $val;
 }
 
+// SQLite fix: Vercel's project filesystem is read-only.
+// Copy the database to /tmp (writable) on every cold start so Laravel
+// can perform INSERT/UPDATE/DELETE operations normally.
+$srcDb  = __DIR__ . '/../database/database.sqlite';
+$tmpDb  = '/tmp/database.sqlite';
+
+if (file_exists($srcDb) && !file_exists($tmpDb)) {
+    copy($srcDb, $tmpDb);
+}
+
+// Point Laravel to the writable /tmp copy of the database
+putenv("DB_DATABASE={$tmpDb}");
+$_ENV['DB_DATABASE']    = $tmpDb;
+$_SERVER['DB_DATABASE'] = $tmpDb;
+
 // Forward the request to Laravel's standard public entrypoint
 require __DIR__ . '/../public/index.php';
