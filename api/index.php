@@ -7,16 +7,12 @@ try {
     require __DIR__ . '/../vendor/autoload.php';
     $app = require_once __DIR__ . '/../bootstrap/app.php';
     
-    // Manually boot the application providers to expose any boot crashes
-    $app->boot();
+    // Run the full Laravel bootstrap process directly to catch any startup exceptions
+    $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
     
-    // If booting succeeds, run the request through the HTTP kernel normally
-    $kernel = $app->make(Illuminate\Contracts\Http\Kernel::class);
-    $response = $kernel->handle(
-        $request = Illuminate\Http\Request::capture()
-    );
-    $response->send();
-    $kernel->terminate($request, $response);
+    // If bootstrap succeeds, print a success message
+    echo "<h1>Laravel Bootstrap Success</h1>";
+    echo "<p>Laravel bootstrapped successfully with all config, environment, and database providers.</p>";
     
 } catch (\Throwable $e) {
     // Keep HTTP 200 so Chrome displays the error message on screen
