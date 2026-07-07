@@ -3,7 +3,7 @@
 use Illuminate\Support\Str;
 
 return [
-    'default' => env('CACHE_DRIVER', isset($_ENV['VERCEL']) ? 'array' : 'file'),
+    'default' => env('CACHE_DRIVER', env('VERCEL') ? 'array' : 'file'),
     'stores' => [
         'file' => [
             'driver' => 'file',
