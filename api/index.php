@@ -4,10 +4,22 @@ error_reporting(E_ALL);
 ini_set('display_errors', '1');
 
 try {
-    // Forward the request to Laravel's public entrypoint
-    require __DIR__ . '/../public/index.php';
+    require __DIR__ . '/../vendor/autoload.php';
+    $app = require_once __DIR__ . '/../bootstrap/app.php';
+    
+    // Manually boot the application providers to expose any boot crashes
+    $app->boot();
+    
+    // If booting succeeds, run the request through the HTTP kernel normally
+    $kernel = $app->make(Illuminate\Contracts\Http\Kernel::class);
+    $response = $kernel->handle(
+        $request = Illuminate\Http\Request::capture()
+    );
+    $response->send();
+    $kernel->terminate($request, $response);
+    
 } catch (\Throwable $e) {
-    // DO NOT send HTTP 500 status here, so Chrome displays the custom HTML response
+    // Keep HTTP 200 so Chrome displays the error message on screen
     echo "<h1>Laravel Serverless Bootstrap Error</h1>";
     echo "<p><strong>Message:</strong> " . htmlspecialchars($e->getMessage()) . "</p>";
     echo "<p><strong>File:</strong> " . htmlspecialchars($e->getFile()) . " (Line " . $e->getLine() . ")</p>";
